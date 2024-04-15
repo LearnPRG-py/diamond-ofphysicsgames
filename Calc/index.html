@@ -130,7 +130,7 @@
           expression = expression.replace(/(sin|cos|tan|asin|acos|atan)\(/g, '$1(Math.PI/180*');
         }
         let result = eval(expression);
-        document.getElementById('display').value = result;
+        document.getElementById('display').value = Math.trunc(result*1000)/1000;
       } catch (error) {
         document.getElementById('display').value = 'Error';
       }
@@ -140,6 +140,22 @@
       mode = mode === 'rad' ? 'deg' : 'rad';
       document.getElementById('display').value = 'Mode: ' + mode;
     }
+
+    document.addEventListener('keypress', function(event) {
+      const key = event.key;
+      if (key === 'Enter') {
+        calculate();
+      } else if (key === 'Delete' || key === 'Backspace') {
+        deleteLast();
+      } else if (key === 'Escape'){
+        clearDisplay();
+      } else if (key === '^') {
+      appendToDisplay('**');
+      }
+      else {
+        appendToDisplay(key);
+      }
+    });
   </script>
 </body>
 
