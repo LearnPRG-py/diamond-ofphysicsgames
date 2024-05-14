@@ -126,7 +126,6 @@
       let expression = document.getElementById('display').value;
       try {
         if (mode === 'deg') {
-          // Convert degrees to radians for trigonometric functions if mode is 'deg'
           expression = expression.replace(/(sin|cos|tan|asin|acos|atan)\(/g, '$1(Math.PI/180*');
         }
         let result = eval(expression);
