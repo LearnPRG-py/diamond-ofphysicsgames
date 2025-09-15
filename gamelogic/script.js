@@ -1,14 +1,4 @@
-const STORAGE_KEYS = {
-    points: 'ach_points',
-    streak: 'ach_streak',
-    correct: 'ach_correct',
-    questions: 'ach_questions',
-    perfection: 'ach_perfection',
-    badges: 'ach_badges',
-    hash: 'ach_hash',
-    achievementsBitmap: 'ach_achievements',
-    lastPlayed: 'ach_last_played' // Added for tracking last play date
-};
+// Don't redeclare STORAGE_KEYS - it's already defined in achievements/script.js
 
 function reportNuggetCompletion(jsonData) {
     try {
@@ -24,7 +14,7 @@ function reportNuggetCompletion(jsonData) {
         let streak = getValue('streak');
         let correct = getValue('correct');
         let questions = getValue('questions');
-        const lastPlayed = parseInt(localStorage.getItem(STORAGE_KEYS.lastPlayed) || '0');
+        const lastPlayed = getValue('lastPlayed');
         
         // Handle points based on accuracy
         if (percentage > 95) {
@@ -47,7 +37,8 @@ function reportNuggetCompletion(jsonData) {
             if (daysDiff === 1) {
                 // Played yesterday, increment streak
                 streak += 1;
-                points += streak; // Add points equal to new streak value
+                const streakPoints = Math.min(streak, 50); // Cap streak points at 50
+                points += streakPoints;
             } else if (daysDiff >= 2) {
                 // Gap of 2+ days, reset streak
                 streak = 1;
@@ -64,13 +55,13 @@ function reportNuggetCompletion(jsonData) {
         correct += score;
         questions += tries;
         
-        // Use setValue function to save all updated values
-        setValue('points', points.toString());
-        setValue('perfection', perfection.toString());
-        setValue('streak', streak.toString());
-        setValue('correct', correct.toString());
-        setValue('questions', questions.toString());
-        setValue(STORAGE_KEYS.lastPlayed, today.toString());
+        // Use setValue function to save all updated values (pass numbers, not strings)
+        setValue('points', points);
+        setValue('perfection', perfection);
+        setValue('streak', streak);
+        setValue('correct', correct);
+        setValue('questions', questions);
+        setValue('lastPlayed', today);
         
         console.log(`Game completed: Score ${score}/${tries} (${percentage.toFixed(1)}%)`);
         console.log(`Updated stats - Points: ${points}, Perfection: ${perfection}, Streak: ${streak}, Correct: ${correct}, Questions: ${questions}`);

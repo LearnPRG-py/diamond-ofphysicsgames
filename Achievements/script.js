@@ -7,7 +7,8 @@ const STORAGE_KEYS = {
     perfection: 'ach_perfection',
     badges: 'ach_badges',
     hash: 'ach_hash',
-    achievementsBitmap: 'ach_achievements'
+    achievementsBitmap: 'ach_achievements',
+    lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
 
 // ---------------- ACHIEVEMENTS DATA ---------------- //
@@ -114,11 +115,6 @@ function createParticles() {
     }, 50);
 }
 
-// Initialize particles
-document.addEventListener('DOMContentLoaded', () => {
-    createParticles();
-});
-
 async function verifyIntegrityServerSide() {
     if (typeof Storage === 'undefined') return true;
     const stats = {
@@ -151,22 +147,20 @@ function getValue(key) {
 
 function setValue(key, val) {
     if (typeof Storage !== 'undefined') {
-        if (val-getValue(key) <= 50){ 
-        localStorage.setItem(STORAGE_KEYS[key], val);
-        saveStateServerSide();
-        }
-        else{
-            console.warn('Attempted to set ' + key + ' to ' + val + ', which is an increase of ' + (getValue(key)-val) + '. Change exceeds limit, saving limit value.');
-            localStorage.setItem(STORAGE_KEYS[key], getValue(key)+50);
+        if (val - getValue(key) <= 50) { 
+            localStorage.setItem(STORAGE_KEYS[key], val);
+            saveStateServerSide();
+        } else {
+            console.warn('Attempted to set ' + key + ' to ' + val + ', which is an increase of ' + (val - getValue(key)) + '. Change exceeds limit, saving limit value.');
+            localStorage.setItem(STORAGE_KEYS[key], getValue(key) + 50);
             saveStateServerSide();
         }
     }
 }
 
 // ---------------- ACHIEVEMENTS BITMAP ---------------- //
-// Modified updateAchievementsBitmap function
 function updateAchievementsBitmap() {
-    const oldBitmap = getValue('achievementsBitmap') || '00000';
+    const oldBitmap = getValue('achievementsBitmap').toString() || '00000';
     let newBitmap = '';
     const newAchievements = [];
     
@@ -196,7 +190,7 @@ function updateAchievementsBitmap() {
         newBitmap += tierUnlocked;
     }
     
-    setValue('achievementsBitmap', newBitmap);
+    setValue('achievementsBitmap', parseInt(newBitmap));
     
     // Add new achievements to the achievement bar queue
     if (typeof addNewAchievement === 'function') {
@@ -228,15 +222,23 @@ function initializeAchievementSystem() {
 
 // ---------------- RENDER FUNCTIONS ---------------- //
 function updateStats() {
-    document.getElementById('points-display').textContent = getValue('points').toLocaleString();
-    document.getElementById('streak-display').textContent = getValue('streak');
-    document.getElementById('correct-display').textContent = getValue('correct').toLocaleString();
-    document.getElementById('questions-display').textContent = getValue('questions').toLocaleString();
+    const pointsElement = document.getElementById('points-display');
+    const streakElement = document.getElementById('streak-display');
+    const correctElement = document.getElementById('correct-display');
+    const questionsElement = document.getElementById('questions-display');
+    
+    if (pointsElement) pointsElement.textContent = getValue('points').toLocaleString();
+    if (streakElement) streakElement.textContent = getValue('streak');
+    if (correctElement) correctElement.textContent = getValue('correct').toLocaleString();
+    if (questionsElement) questionsElement.textContent = getValue('questions').toLocaleString();
+    
     updateAchievementsBitmap();
 }
 
 function renderAchievements() {
     const container = document.getElementById('achievements-container');
+    if (!container) return; // Exit gracefully if container doesn't exist
+    
     container.innerHTML = '';
 
     for (const category in ACHIEVEMENTS) {
@@ -290,7 +292,6 @@ function renderAchievements() {
         container.appendChild(categoryDiv);
     }
 }
-document.addEventListener('DOMContentLoaded', initializeAchievementSystem);
 
 // Periodic achievement checking (every time stats change + periodic backup)
 function checkAchievementsAndUpdate() {
@@ -320,9 +321,11 @@ setInterval(() => {
     checkAchievementsAndUpdate();
 }, 30000);
 
-
-
+// Single DOM Content Loaded event handler
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize particles
+    createParticles();
+    
     // Only do the integrity check and reset if needed
     if (typeof Storage !== 'undefined' && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
