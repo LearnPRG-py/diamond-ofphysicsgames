@@ -306,17 +306,14 @@ function checkAchievementsAndUpdate() {
 }
 
 // Override setValue to automatically check achievements whenever stats change
-let achievementUpdateTimeout;
-
 const originalSetValue = setValue;
 setValue = function(key, val) {
     originalSetValue(key, val);
     
-    // Debounce: clear previous timeout and schedule a new one
-    clearTimeout(achievementUpdateTimeout);
-    achievementUpdateTimeout = setTimeout(() => {
+    // Check for achievements whenever stats change
+    setTimeout(() => {
         checkAchievementsAndUpdate();
-    }, 100); // wait for 100ms of inactivity before updating
+    }, 50); // Small delay to ensure all related updates are complete
 };
 
 // Optional: Periodic check every 30 seconds as backup
