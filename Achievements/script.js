@@ -13,13 +13,13 @@ const STORAGE_KEYS = {
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
     points: [
-        { threshold: 100, name: "Getting Started", icon: "🌟" },
-        { threshold: 500, name: "Point Collector", icon: "💎" },
-        { threshold: 1000, name: "Rising Scholar", icon: "📚" },
-        { threshold: 5000, name: "Point Hoarder", icon: "💰" },
-        { threshold: 10000, name: "Master", icon: "👑" },
-        { threshold: 50000, name: "Legendary", icon: "🏆" },
-        { threshold: 100000, name: "HOW DID WE GET HERE?!", icon: "🚀" }
+        { threshold: 50, name: "Getting Started", icon: "🌟" },
+        { threshold: 200, name: "Point Collector", icon: "💎" },
+        { threshold: 500, name: "Rising Scholar", icon: "📚" },
+        { threshold: 1000, name: "Point Hoarder", icon: "💰" },
+        { threshold: 5000, name: "Master", icon: "👑" },
+        { threshold: 10000, name: "Legendary", icon: "🏆" },
+        { threshold: 50000, name: "HOW DID WE GET HERE?!", icon: "🚀" }
     ],
     streak: [
         { threshold: 7, name: "Week One Wonder", icon: "📅" },
@@ -151,24 +151,79 @@ function getValue(key) {
 
 function setValue(key, val) {
     if (typeof Storage !== 'undefined') {
+        if (val-getValue(key) <= 50){ 
         localStorage.setItem(STORAGE_KEYS[key], val);
         saveStateServerSide();
+        }
+        else{
+            console.warn('Attempted to set ' + key + ' to ' + val + ', which is an increase of ' + (getValue(key)-val) + '. Change exceeds limit, saving limit value.');
+            localStorage.setItem(STORAGE_KEYS[key], getValue(key)+50);
+            saveStateServerSide();
+        }
     }
 }
 
 // ---------------- ACHIEVEMENTS BITMAP ---------------- //
+// Modified updateAchievementsBitmap function
 function updateAchievementsBitmap() {
-    let bitmap = '';
-    for (let category of ['points','streak','correct','questions','perfection']) {
+    const oldBitmap = getValue('achievementsBitmap') || '00000';
+    let newBitmap = '';
+    const newAchievements = [];
+    
+    for (let i = 0; i < ['points','streak','correct','questions','perfection'].length; i++) {
+        const category = ['points','streak','correct','questions','perfection'][i];
         const value = getValue(category);
         const maxTier = ACHIEVEMENTS[category].length;
         let tierUnlocked = 0;
-        for (let i = 0; i < maxTier; i++) {
-            if (value >= ACHIEVEMENTS[category][i].threshold) tierUnlocked = i + 1;
+        
+        for (let j = 0; j < maxTier; j++) {
+            if (value >= ACHIEVEMENTS[category][j].threshold) tierUnlocked = j + 1;
         }
-        bitmap += tierUnlocked;
+        
+        // Check if this tier is newly unlocked
+        const oldTier = parseInt(oldBitmap[i]) || 0;
+        if (tierUnlocked > oldTier) {
+            // New achievement unlocked!
+            const achievement = ACHIEVEMENTS[category][tierUnlocked - 1];
+            newAchievements.push({
+                id: `${category}_${tierUnlocked}`,
+                icon: achievement.icon || '🏆',
+                title: achievement.name,
+                description: achievement.description
+            });
+        }
+        
+        newBitmap += tierUnlocked;
     }
-    setValue('achievementsBitmap', bitmap);
+    
+    setValue('achievementsBitmap', newBitmap);
+    
+    // Add new achievements to the achievement bar queue
+    if (typeof addNewAchievement === 'function') {
+        newAchievements.forEach(ach => {
+            addNewAchievement(ach.id, ach.icon, ach.title, ach.description);
+        });
+    }
+    
+    return newAchievements.length > 0; // Return true if any new achievements were unlocked
+}
+
+function initializeAchievementSystem() {
+    if (typeof Storage !== 'undefined' && !(verifyIntegrityServerSide ? verifyIntegrityServerSide() : true)) {
+        console.warn('Data tampered or missing! Resetting...');
+        for (let key in STORAGE_KEYS) {
+            if (key !== 'hash') localStorage.setItem(STORAGE_KEYS[key], '0');
+        }
+        if (typeof saveStateServerSide === 'function') {
+            saveStateServerSide();
+        }
+    }
+
+    updateStats();
+    if (typeof renderAchievements === 'function') {
+        renderAchievements();
+    }
+    updateAchievementsBitmap(); // Check for achievements on init
 }
 
 // ---------------- RENDER FUNCTIONS ---------------- //
@@ -235,9 +290,40 @@ function renderAchievements() {
         container.appendChild(categoryDiv);
     }
 }
+document.addEventListener('DOMContentLoaded', initializeAchievementSystem);
 
-// ---------------- INIT ---------------- //
+// Periodic achievement checking (every time stats change + periodic backup)
+function checkAchievementsAndUpdate() {
+    updateStats();
+    const hasNewAchievements = updateAchievementsBitmap();
+    
+    if (typeof renderAchievements === 'function') {
+        renderAchievements();
+    }
+    
+    return hasNewAchievements;
+}
+
+// Override setValue to automatically check achievements whenever stats change
+const originalSetValue = setValue;
+setValue = function(key, val) {
+    originalSetValue(key, val);
+    
+    // Check for achievements whenever stats change
+    setTimeout(() => {
+        checkAchievementsAndUpdate();
+    }, 50); // Small delay to ensure all related updates are complete
+};
+
+// Optional: Periodic check every 30 seconds as backup
+setInterval(() => {
+    checkAchievementsAndUpdate();
+}, 30000);
+
+
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // Only do the integrity check and reset if needed
     if (typeof Storage !== 'undefined' && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
@@ -245,7 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         await saveStateServerSide();
     }
-
     updateStats();
     renderAchievements();
+    updateAchievementsBitmap(); // Initial achievement check
 });
