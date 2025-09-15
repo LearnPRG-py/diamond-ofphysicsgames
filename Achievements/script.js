@@ -59,8 +59,13 @@ const CATEGORY_NAMES = {
 };
 
 // ---------------- SERVER HASHING ---------------- //
+let isSavingState = false;
+
 async function saveStateServerSide() {
     if (typeof Storage === 'undefined') return;
+    if (isSavingState) return; // Prevent overlapping requests
+    isSavingState = true;
+
     const stats = {
         points: getValue('points'),
         streak: getValue('streak'),
@@ -81,9 +86,12 @@ async function saveStateServerSide() {
         }
     } catch (err) {
         console.error('Error saving state:', err);
+    } finally {
+        isSavingState = false;
     }
 }
 
+// ---------------- PARTICLES ---------------- //
 function createParticles() {
     const particlesContainer = document.getElementById('particles');
     if (!particlesContainer) return;
@@ -99,13 +107,12 @@ function createParticles() {
             particle.style.left = Math.random() * 100 + 'vw';
             particle.style.width = particle.style.height = Math.random() * 4 + 2 + 'px';
             
-            const animationDuration = Math.random() * 3 + 6; // 6-9 seconds
+            const animationDuration = Math.random() * 3 + 6;
             particle.style.animationDuration = animationDuration + 's';
             particle.style.animationDelay = Math.random() * 1 + 's';
             
             particlesContainer.appendChild(particle);
             
-            // Remove particle only after animation actually ends
             particle.addEventListener('animationend', () => {
                 if (particle.parentNode) {
                     particle.remove();
@@ -115,6 +122,7 @@ function createParticles() {
     }, 50);
 }
 
+// ---------------- VERIFY INTEGRITY ---------------- //
 async function verifyIntegrityServerSide() {
     if (typeof Storage === 'undefined') return true;
     const stats = {
@@ -159,7 +167,16 @@ function setValue(key, val) {
 }
 
 // ---------------- ACHIEVEMENTS BITMAP ---------------- //
+let isUpdatingAchievements = false;
+
 function updateAchievementsBitmap() {
+    if (isUpdatingAchievements) {
+        console.warn('Skipping achievement update to avoid recursion.');
+        return false;
+    }
+
+    isUpdatingAchievements = true;
+
     const oldBitmap = getValue('achievementsBitmap').toString() || '00000';
     let newBitmap = '';
     const newAchievements = [];
@@ -174,10 +191,8 @@ function updateAchievementsBitmap() {
             if (value >= ACHIEVEMENTS[category][j].threshold) tierUnlocked = j + 1;
         }
         
-        // Check if this tier is newly unlocked
         const oldTier = parseInt(oldBitmap[i]) || 0;
         if (tierUnlocked > oldTier) {
-            // New achievement unlocked!
             const achievement = ACHIEVEMENTS[category][tierUnlocked - 1];
             newAchievements.push({
                 id: `${category}_${tierUnlocked}`,
@@ -190,18 +205,22 @@ function updateAchievementsBitmap() {
         newBitmap += tierUnlocked;
     }
     
-    setValue('achievementsBitmap', parseInt(newBitmap));
-    
-    // Add new achievements to the achievement bar queue
+    if (newBitmap !== oldBitmap) {
+        setValue('achievementsBitmap', parseInt(newBitmap));
+    }
+
+    isUpdatingAchievements = false;
+
     if (typeof addNewAchievement === 'function') {
         newAchievements.forEach(ach => {
             addNewAchievement(ach.id, ach.icon, ach.title, ach.description);
         });
     }
     
-    return newAchievements.length > 0; // Return true if any new achievements were unlocked
+    return newAchievements.length > 0;
 }
 
+// ---------------- INITIALIZATION ---------------- //
 function initializeAchievementSystem() {
     if (typeof Storage !== 'undefined' && !(verifyIntegrityServerSide ? verifyIntegrityServerSide() : true)) {
         console.warn('Data tampered or missing! Resetting...');
@@ -217,7 +236,7 @@ function initializeAchievementSystem() {
     if (typeof renderAchievements === 'function') {
         renderAchievements();
     }
-    updateAchievementsBitmap(); // Check for achievements on init
+    updateAchievementsBitmap();
 }
 
 // ---------------- RENDER FUNCTIONS ---------------- //
@@ -237,7 +256,7 @@ function updateStats() {
 
 function renderAchievements() {
     const container = document.getElementById('achievements-container');
-    if (!container) return; // Exit gracefully if container doesn't exist
+    if (!container) return;
     
     container.innerHTML = '';
 
@@ -293,7 +312,7 @@ function renderAchievements() {
     }
 }
 
-// Periodic achievement checking (every time stats change + periodic backup)
+// ---------------- ACHIEVEMENT CHECK ---------------- //
 function checkAchievementsAndUpdate() {
     updateStats();
     const hasNewAchievements = updateAchievementsBitmap();
@@ -305,28 +324,26 @@ function checkAchievementsAndUpdate() {
     return hasNewAchievements;
 }
 
-// Override setValue to automatically check achievements whenever stats change
+// ---------------- OVERRIDE setValue ---------------- //
 const originalSetValue = setValue;
 setValue = function(key, val) {
     originalSetValue(key, val);
-    
-    // Check for achievements whenever stats change
+
+    // Delay achievement checking slightly, but won't overlap because of guards
     setTimeout(() => {
         checkAchievementsAndUpdate();
-    }, 50); // Small delay to ensure all related updates are complete
+    }, 50);
 };
 
-// Optional: Periodic check every 30 seconds as backup
+// ---------------- PERIODIC CHECK ---------------- //
 setInterval(() => {
     checkAchievementsAndUpdate();
-}, 30000);
+}, 15000); // every 15 seconds
 
-// Single DOM Content Loaded event handler
+// ---------------- DOM READY ---------------- //
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize particles
     createParticles();
-    
-    // Only do the integrity check and reset if needed
+
     if (typeof Storage !== 'undefined' && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
@@ -336,5 +353,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     updateStats();
     renderAchievements();
-    updateAchievementsBitmap(); // Initial achievement check
+    updateAchievementsBitmap();
 });
