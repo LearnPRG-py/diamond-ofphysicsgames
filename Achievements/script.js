@@ -476,6 +476,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderAchievements();
     updateAchievementsBitmap();
 });
+// Keyboard sequence detector for "Reset!!!"
+let keySequence = '';
+let sequenceTimeout;
+
+function isInTextInput() {
+    const activeElement = document.activeElement;
+    const inputTypes = ['INPUT', 'TEXTAREA', 'SELECT'];
+    const contentEditable = activeElement.contentEditable === 'true';
+    
+    return inputTypes.includes(activeElement.tagName) || contentEditable;
+}
+
+function resetAllData() {
+    console.log('Resetting all achievement data...');
+    
+    // List of cookies to clear (matching your achievement system)
+    const cookiesToClear = [
+        'ach_points',
+        'ach_streak', 
+        'ach_correct',
+        'ach_questions',
+        'ach_perfection',
+        'ach_badges',
+        'ach_achievements',
+        'ach_local_secret',
+        'pending_achievements'
+    ];
+    
+    // Clear each cookie
+    cookiesToClear.forEach(cookieName => {
+        document.cookie = `${encodeURIComponent(cookieName)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
+    });
+    
+    console.log('All achievement data cleared. Reloading page...');
+    
+    // Show confirmation
+    alert('Achievement data has been reset!');
+    
+    // Reload page to reflect changes
+    window.location.reload();
+}
+
+document.addEventListener('keydown', function(event) {
+    // Ignore if user is typing in a text field
+    if (isInTextInput()) {
+        return;
+    }
+    
+    // Clear any existing timeout
+    clearTimeout(sequenceTimeout);
+    
+    // Add the pressed key to sequence
+    keySequence += event.key;
+    
+    // Keep only the last 8 characters (length of "Reset!!!")
+    if (keySequence.length > 8) {
+        keySequence = keySequence.slice(-8);
+    }
+    
+    // Check if sequence matches "Reset!!!"
+    if (keySequence === 'Reset!!!') {
+        console.log('Reset sequence detected!');
+        keySequence = ''; // Clear sequence
+        
+        // Confirm before reset
+        if (confirm('Are you sure you want to reset ALL achievement data? This cannot be undone!')) {
+            resetAllData();
+        }
+        return;
+    }
+    
+    // Clear sequence after 2 seconds of no typing
+    sequenceTimeout = setTimeout(() => {
+        keySequence = '';
+    }, 2000);
+});
+
+console.log('Reset keyboard listener initialized. Type "Reset!!!" to clear achievement data.');
 
 // ✅ Expose functions globally
 window.addNewAchievement = addNewAchievement;
