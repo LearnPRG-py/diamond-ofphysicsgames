@@ -21,10 +21,11 @@ const DEBUG_SHORT_CIRCUIT_SAVE = false; // set to true to skip server-side saveS
 const FEATURE_FLAGS = {
     //set all to false while debugging except the bottom half
     // issue is in top half - enable the top one by binary search
+    // issue is one of the bottlom two set to false currently
     createParticles: true, 
     saveStateServerSide: true,
     verifyIntegrityServerSide: true,
-    updateStats: false,
+    updateStats: true,
     renderAchievements: false,
     updateAchievementsBitmap: true,
     checkAchievementsAndUpdate: true,
