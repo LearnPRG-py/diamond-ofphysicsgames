@@ -77,8 +77,36 @@ const CATEGORY_NAMES = {
     perfection: "Perfection Badges"
 };
 
-// ---------------- SERVER HASHING ---------------- //
-let isSavingState = false;
+// ---------------- LOCAL ENCRYPTION ---------------- //
+let localSecret = null;
+
+// Initialize local secret on first load
+function initializeLocalSecret() {
+    if (localSecret === null) {
+        // Try to get existing secret from storage
+        const existingSecret = getCookie('ach_local_secret');
+        if (existingSecret) {
+            localSecret = parseInt(existingSecret, 10);
+        } else {
+            // Generate new random secret (0-9999)
+            localSecret = Math.floor(Math.random() * 10000);
+            setCookie('ach_local_secret', String(localSecret), 2147483647);
+        }
+    }
+    return localSecret;
+}
+
+// Encrypt a value using local secret
+function encryptValue(value) {
+    const secret = initializeLocalSecret();
+    return (secret * secret) + (44 * secret) + value;
+}
+
+// Decrypt a value using local secret
+function decryptValue(encryptedValue) {
+    const secret = initializeLocalSecret();
+    return encryptedValue - (secret * secret) - (44 * secret);
+}
 
 // ---------------- COOKIE HELPERS ---------------- //
 function setCookie(name, value, days = 2147483647) {
@@ -103,45 +131,7 @@ function deleteCookie(name) {
     document.cookie = `${encodeURIComponent(name)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
 }
 
-async function saveStateServerSide() {
-    // Respect feature flag for server saves
-    if (!FEATURE_FLAGS.saveStateServerSide) {
-        console.info('FEATURE_FLAGS.saveStateServerSide disabled: skipping saveStateServerSide');
-        return;
-    }
-    // If debugging, skip server-side saves to isolate performance issues
-    if (typeof DEBUG_SHORT_CIRCUIT_SAVE !== 'undefined' && DEBUG_SHORT_CIRCUIT_SAVE) {
-        console.info('DEBUG_SHORT_CIRCUIT_SAVE enabled: skipping saveStateServerSide');
-        return;
-    }
-    if (typeof document === 'undefined' || typeof document.cookie === 'undefined') return;
-    if (isSavingState) return; // Prevent overlapping requests
-    isSavingState = true;
-
-        const stats = {
-        points: getValue('points'),
-        streak: getValue('streak'),
-        correct: getValue('correct'),
-        questions: getValue('questions'),
-        perfection: getValue('perfection'),
-        badges: getValue('badges')
-    };
-    try {
-        const res = await fetch('/.netlify/functions/hash-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stats })
-        });
-        const data = await res.json();
-        if (data.hash) {
-            setCookie(STORAGE_KEYS.hash, data.hash, 2147483647);
-        }
-    } catch (err) {
-        console.error('Error saving state:', err);
-    } finally {
-        isSavingState = false;
-    }
-}
+// Server-side functions removed - using local encryption instead
 
 // ---------------- PARTICLES ---------------- //
 function createParticles() {
@@ -174,32 +164,7 @@ function createParticles() {
     }, 50);
 }
 
-// ---------------- VERIFY INTEGRITY ---------------- //
-async function verifyIntegrityServerSide() {
-    if (!FEATURE_FLAGS.verifyIntegrityServerSide) return true;
-    if (typeof Storage === 'undefined') return true;
-    const stats = {
-        points: getValue('points'),
-        streak: getValue('streak'),
-        correct: getValue('correct'),
-        questions: getValue('questions'),
-        perfection: getValue('perfection'),
-        badges: getValue('badges')
-    };
-    try {
-        const res = await fetch('/.netlify/functions/hash-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stats })
-        });
-        const data = await res.json();
-    return data.hash === getCookie(STORAGE_KEYS.hash);
-    } catch (err) {
-        console.error('Error verifying integrity:', err);
-        return false;
-    }
-    return true;
-}
+// Server-side verification removed - using local encryption instead
 
 // ---------------- STATE GET/SET ---------------- //
 
@@ -211,7 +176,26 @@ function getValue(key) {
 
     if (typeof document === 'undefined' || typeof document.cookie === 'undefined') return 0;
     const raw = getCookie(STORAGE_KEYS[key]);
-    return raw ? parseInt(raw, 10) || 0 : 0;
+    
+    if (!raw) return 0;
+    
+    // Keys that should NOT be decrypted (bitmap, badges, etc.)
+    const EXEMPT_FROM_DECRYPTION = ['achievementsBitmap', 'badges', 'hash'];
+    
+    if (EXEMPT_FROM_DECRYPTION.includes(key)) {
+        return parseInt(raw, 10) || 0;
+    }
+    
+    // Decrypt the value for numeric stats
+    const encryptedValue = parseInt(raw, 10);
+    if (!Number.isFinite(encryptedValue)) return 0;
+    
+    try {
+        return decryptValue(encryptedValue);
+    } catch (error) {
+        console.warn(`Failed to decrypt ${key}, returning 0:`, error);
+        return 0;
+    }
 }
 
 function setValue(key, val) {
@@ -221,13 +205,12 @@ function setValue(key, val) {
     }
 
     if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined') {
-        // Keys that should NOT be subject to the "+50 cap" (bitmap, hashes, badges etc.)
+        // Keys that should NOT be subject to encryption or "+50 cap" (bitmap, hashes, badges etc.)
         const EXEMPT_FROM_CAP = ['achievementsBitmap', 'badges', 'hash'];
 
         // If the key is exempt, write the value as-is (string) and skip numeric checks.
         if (EXEMPT_FROM_CAP.includes(key)) {
             setCookie(STORAGE_KEYS[key], String(val), 2147483647);
-            saveStateServerSide();
             return;
         }
 
@@ -241,13 +224,19 @@ function setValue(key, val) {
         const current = getValue(key);
         const delta = numericVal - current;
 
-        if (Math.abs(delta) <= 50) {
-            setCookie(STORAGE_KEYS[key], String(numericVal), 2147483647);
-            saveStateServerSide();
-        } else {
+        let valueToSave = numericVal;
+        if (Math.abs(delta) > 50) {
             console.warn(`Attempted to set ${key} to ${numericVal}, which is an increase of ${delta}. Change exceeds limit, saving limit value.`);
-            setCookie(STORAGE_KEYS[key], String(current + 50), 2147483647);
-            saveStateServerSide();
+            valueToSave = current + 50;
+        }
+
+        // Encrypt the value before saving
+        try {
+            const encryptedValue = encryptValue(valueToSave);
+            setCookie(STORAGE_KEYS[key], String(encryptedValue), 2147483647);
+        } catch (error) {
+            console.error(`Failed to encrypt ${key}, saving unencrypted:`, error);
+            setCookie(STORAGE_KEYS[key], String(valueToSave), 2147483647);
         }
     }
 }
@@ -301,8 +290,6 @@ function updateAchievementsBitmap() {
     if (newBitmapNum !== oldBitmapNum) {
         // Write bitmap directly (bitmap should not be subject to the +50 cap in setValue)
         setCookie(STORAGE_KEYS.achievementsBitmap, String(newBitmapNum), 2147483647);
-        // Also update server-side hash/state if configured
-        if (FEATURE_FLAGS.saveStateServerSide) saveStateServerSide();
     }
     console.log('Finished updating achievements bitmap.');
     isUpdatingAchievements = false;
@@ -319,16 +306,9 @@ function updateAchievementsBitmap() {
 
 // ---------------- INITIALIZATION ---------------- //
 function initializeAchievementSystem() {
-    if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined' && !(verifyIntegrityServerSide ? verifyIntegrityServerSide() : true)) {
-        console.warn('Data tampered or missing! Resetting...');
-        for (let key in STORAGE_KEYS) {
-            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 2147483647);
-        }
-        if (typeof saveStateServerSide === 'function') {
-            saveStateServerSide();
-        }
-    }
-
+    // Initialize local encryption secret
+    initializeLocalSecret();
+    
     updateStats();
     if (typeof renderAchievements === 'function') {
         renderAchievements();
@@ -449,13 +429,9 @@ if (FEATURE_FLAGS.periodicCheck) {
 document.addEventListener('DOMContentLoaded', async () => {
     if (FEATURE_FLAGS.createParticles) createParticles();
 
-    if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined' && FEATURE_FLAGS.verifyIntegrityServerSide && !(await verifyIntegrityServerSide())) {
-        console.warn('Data tampered or missing! Resetting...');
-        for (let key in STORAGE_KEYS) {
-            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 2147483647);
-        }
-        await saveStateServerSide();
-    }
+    // Initialize local encryption secret
+    initializeLocalSecret();
+    
     updateStats();
     renderAchievements();
     updateAchievementsBitmap();

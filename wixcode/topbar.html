@@ -385,6 +385,37 @@ const STORAGE_KEYS = {
     streak: 'ach_streak'
 };
 
+// ---------------- LOCAL ENCRYPTION ---------------- //
+let localSecret = null;
+
+// Initialize local secret on first load
+function initializeLocalSecret() {
+    if (localSecret === null) {
+        // Try to get existing secret from storage
+        const existingSecret = getCookie('ach_local_secret');
+        if (existingSecret) {
+            localSecret = parseInt(existingSecret, 10);
+        } else {
+            // Generate new random secret (0-9999)
+            localSecret = Math.floor(Math.random() * 10000);
+            setCookie('ach_local_secret', String(localSecret), 2147483647);
+        }
+    }
+    return localSecret;
+}
+
+// Encrypt a value using local secret
+function encryptValue(value) {
+    const secret = initializeLocalSecret();
+    return (secret * secret) + (44 * secret) + value;
+}
+
+// Decrypt a value using local secret
+function decryptValue(encryptedValue) {
+    const secret = initializeLocalSecret();
+    return encryptedValue - (secret * secret) - (44 * secret);
+}
+
 // Cookie helpers (scoped to .quarklearning.online)
 function setCookie(name, value, days = 2147483647) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -425,13 +456,40 @@ let isProcessingAchievements = false;
 
 // Utility Functions
 function getValue(key) {
-    const value = getCookie(STORAGE_KEYS[key]);
-    return value ? parseInt(value, 10) : 0;
+    const raw = getCookie(STORAGE_KEYS[key]);
+    
+    if (!raw) return 0;
+    
+    // Decrypt the value for numeric stats
+    const encryptedValue = parseInt(raw, 10);
+    if (!Number.isFinite(encryptedValue)) return 0;
+    
+    try {
+        return decryptValue(encryptedValue);
+    } catch (error) {
+        console.warn(`Failed to decrypt ${key}, returning 0:`, error);
+        return 0;
+    }
 }
 
 function setValue(key, val) {
-    setCookie(STORAGE_KEYS[key], String(val), 2147483647);
-    updateStatsDisplay();
+    // Coerce to number and validate
+    const numericVal = Number(val);
+    if (!Number.isFinite(numericVal)) {
+        console.warn(`Attempted to set ${key} to ${val}, which is not a finite number. Ignoring write.`);
+        return;
+    }
+
+    // Encrypt the value before saving
+    try {
+        const encryptedValue = encryptValue(numericVal);
+        setCookie(STORAGE_KEYS[key], String(encryptedValue), 2147483647);
+        updateStatsDisplay();
+    } catch (error) {
+        console.error(`Failed to encrypt ${key}, saving unencrypted:`, error);
+        setCookie(STORAGE_KEYS[key], String(numericVal), 2147483647);
+        updateStatsDisplay();
+    }
 }
 
 function getCurrentRank(points) {
@@ -528,6 +586,9 @@ if (!window.achievementBarInitialized) {
     window.achievementBarInitialized = true;
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize local encryption secret
+        initializeLocalSecret();
+        
         updateStatsDisplay();
         createBarParticles();
         if (typeof checkAchievementsAndUpdate === 'function') {
