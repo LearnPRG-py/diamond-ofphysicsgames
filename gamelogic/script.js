@@ -27,39 +27,29 @@ function reportNuggetCompletion(jsonData) {
             points += 20; // Just completed
         }
         
-        // Handle streak logic (guarded)
-        // Compute today's midnight timestamp once and validate lastPlayed
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-        // Coerce lastPlayed to a number and validate
-        let lastPlayedNum = Number(lastPlayed);
-        if (!Number.isFinite(lastPlayedNum) || lastPlayedNum <= 0) {
-            // Treat as first-time play or invalid stored value
-            streak = 1;
-            points += streak; // Add 1 point for first streak
-        } else {
-            const MS_PER_DAY = 1000 * 60 * 60 * 24;
-            let daysDiff = Math.floor((today - lastPlayedNum) / MS_PER_DAY);
-
-            // Guard against unexpected huge / NaN values
-            if (!Number.isFinite(daysDiff) || Math.abs(daysDiff) > 10000) {
-                // suspicious value, ignore and don't modify streak
-                daysDiff = 0;
-            }
-
-            if (daysDiff === 1) {
-                // Played yesterday, increment streak
-                streak = (Number.isFinite(streak) ? streak : 0) + 1;
-                const streakPoints = Math.min(streak, 50); // Cap streak points at 50
-                points += streakPoints;
-            } else if (daysDiff >= 2) {
-                // Gap of 2+ days, reset streak
-                streak = 1;
-                points += streak; // Add 1 point for streak reset
-            }
-            // If daysDiff === 0 (same day), don't change streak or add streak points
-        }
+        // Handle streak logic
+        // const now = new Date();
+        // const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        
+        // if (lastPlayed > 0) {
+        //     const daysDiff = Math.floor((today - lastPlayed) / (1000 * 60 * 60 * 24));
+            
+        //     if (daysDiff === 1) {
+        //         // Played yesterday, increment streak
+        //         streak += 1;
+        //         const streakPoints = Math.min(streak, 50); // Cap streak points at 50
+        //         points += streakPoints;
+        //     } else if (daysDiff >= 2) {
+        //         // Gap of 2+ days, reset streak
+        //         streak = 1;
+        //         points += streak; // Add 1 point for streak reset
+        //     }
+        //     // If daysDiff === 0 (same day), don't change streak or add streak points
+        // } else {
+        //     // First time playing, set streak to 1
+        //     streak = 1;
+        //     points += streak; // Add 1 point for first streak
+        // }
         
         // Update correct and questions
         correct += score;
