@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
 // Debug short-circuit for writes
-const DEBUG_SHORT_CIRCUIT_SET = false; // set to true to make setValue a no-op during debugging
+const DEBUG_SHORT_CIRCUIT_SET = true; // set to true to make setValue a no-op during debugging
 // Debug short-circuit for reads
 const DEBUG_SHORT_CIRCUIT_GET = true; // set to true to force getValue to return 0 during debugging
 
