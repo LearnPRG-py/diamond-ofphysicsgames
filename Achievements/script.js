@@ -11,7 +11,9 @@ const STORAGE_KEYS = {
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
 // Debug short-circuit for writes
-const DEBUG_SHORT_CIRCUIT_SET = true; // set to true to make setValue a no-op during debugging
+const DEBUG_SHORT_CIRCUIT_SET = false; // set to true to make setValue a no-op during debugging
+// Debug short-circuit for reads
+const DEBUG_SHORT_CIRCUIT_GET = true; // set to true to force getValue to return 0 during debugging
 
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
@@ -153,6 +155,11 @@ async function verifyIntegrityServerSide() {
 // ---------------- STATE GET/SET ---------------- //
 
 function getValue(key) {
+    // If debug short-circuit for reads is enabled, force a fast default value
+    if (typeof DEBUG_SHORT_CIRCUIT_GET !== 'undefined' && DEBUG_SHORT_CIRCUIT_GET) {
+        return 0;
+    }
+
     if (typeof Storage === 'undefined') return 0;
     return parseInt(localStorage.getItem(STORAGE_KEYS[key])) || 0;
 }
