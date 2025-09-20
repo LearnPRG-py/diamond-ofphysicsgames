@@ -221,7 +221,10 @@ function updateAchievementsBitmap() {
 
     isUpdatingAchievements = true;
     console.log('Updating achievements bitmap...');
-    const oldBitmap = getValue('achievementsBitmap').toString() || '00000';
+    // Normalize the stored bitmap as a zero-padded 5-character string for comparison
+    const stored = getValue('achievementsBitmap');
+    const oldBitmapNum = Number.isFinite(Number(stored)) ? Number(stored) : 0;
+    const oldBitmap = String(oldBitmapNum).padStart(5, '0');
     let newBitmap = '';
     const newAchievements = [];
     
@@ -249,9 +252,10 @@ function updateAchievementsBitmap() {
         newBitmap += tierUnlocked;
     }
     console.log('Old Bitmap:', oldBitmap, 'New Bitmap:', newBitmap);
-    
-    if (newBitmap !== oldBitmap) {
-        setValue('achievementsBitmap', parseInt(newBitmap));
+    // Compare numeric values to avoid writing the same numeric bitmap with differing string representations
+    const newBitmapNum = Number.isFinite(Number(newBitmap)) ? Number(newBitmap) : 0;
+    if (newBitmapNum !== oldBitmapNum) {
+        setValue('achievementsBitmap', newBitmapNum);
     }
     console.log('Finished updating achievements bitmap.');
     isUpdatingAchievements = false;
