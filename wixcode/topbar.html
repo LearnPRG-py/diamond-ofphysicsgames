@@ -460,16 +460,25 @@ function getValue(key) {
     
     if (!raw) return 0;
     
-    // Decrypt the value for numeric stats
-    const encryptedValue = parseInt(raw, 10);
-    if (!Number.isFinite(encryptedValue)) return 0;
+    const rawValue = parseInt(raw, 10);
+    if (!Number.isFinite(rawValue)) return 0;
     
-    try {
-        return decryptValue(encryptedValue);
-    } catch (error) {
-        console.warn(`Failed to decrypt ${key}, returning 0:`, error);
-        return 0;
+    // Check if this looks like encrypted data (much larger than reasonable values)
+    // If the value is suspiciously large, try to decrypt it
+    if (rawValue > 1000000) { // Reasonable threshold for unencrypted values
+        try {
+            const decrypted = decryptValue(rawValue);
+            // If decryption gives us a reasonable value, use it
+            if (decrypted >= 0 && decrypted < 1000000) {
+                return decrypted;
+            }
+        } catch (error) {
+            console.warn(`Failed to decrypt ${key}:`, error);
+        }
     }
+    
+    // Return the raw value (either it's unencrypted or decryption failed)
+    return rawValue;
 }
 
 function setValue(key, val) {

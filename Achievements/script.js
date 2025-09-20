@@ -186,16 +186,25 @@ function getValue(key) {
         return parseInt(raw, 10) || 0;
     }
     
-    // Decrypt the value for numeric stats
-    const encryptedValue = parseInt(raw, 10);
-    if (!Number.isFinite(encryptedValue)) return 0;
+    const rawValue = parseInt(raw, 10);
+    if (!Number.isFinite(rawValue)) return 0;
     
-    try {
-        return decryptValue(encryptedValue);
-    } catch (error) {
-        console.warn(`Failed to decrypt ${key}, returning 0:`, error);
-        return 0;
+    // Check if this looks like encrypted data (much larger than reasonable values)
+    // If the value is suspiciously large, try to decrypt it
+    if (rawValue > 1000000) { // Reasonable threshold for unencrypted values
+        try {
+            const decrypted = decryptValue(rawValue);
+            // If decryption gives us a reasonable value, use it
+            if (decrypted >= 0 && decrypted < 1000000) {
+                return decrypted;
+            }
+        } catch (error) {
+            console.warn(`Failed to decrypt ${key}:`, error);
+        }
     }
+    
+    // Return the raw value (either it's unencrypted or decryption failed)
+    return rawValue;
 }
 
 function setValue(key, val) {
@@ -425,6 +434,23 @@ if (FEATURE_FLAGS.periodicCheck) {
     }, 15000); // every 15 seconds
 }
 
+// ---------------- RESET FUNCTION ---------------- //
+function resetAllData() {
+    console.log('Resetting all achievement data...');
+    for (let key in STORAGE_KEYS) {
+        if (key !== 'hash') {
+            setCookie(STORAGE_KEYS[key], '0', 2147483647);
+        }
+    }
+    // Also clear the local secret to force regeneration
+    deleteCookie('ach_local_secret');
+    localSecret = null;
+    console.log('Data reset complete. Refreshing page...');
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
 // ---------------- DOM READY ---------------- //
 document.addEventListener('DOMContentLoaded', async () => {
     if (FEATURE_FLAGS.createParticles) createParticles();
@@ -432,7 +458,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize local encryption secret
     initializeLocalSecret();
     
+    // Check for corrupted data and reset if needed
+    const points = getValue('points');
+    const streak = getValue('streak');
+    const correct = getValue('correct');
+    const questions = getValue('questions');
+    
+    // If any value is negative or suspiciously large, reset everything
+    if (points < 0 || streak < 0 || correct < 0 || questions < 0 || 
+        points > 1000000 || streak > 1000000 || correct > 1000000 || questions > 1000000) {
+        console.warn('Detected corrupted data, resetting...');
+        resetAllData();
+        return;
+    }
+    
     updateStats();
     renderAchievements();
     updateAchievementsBitmap();
 });
+
+// ✅ Expose functions globally
+window.addNewAchievement = addNewAchievement;
+window.getValue = getValue;
+window.setValue = setValue;
+window.updateStatsDisplay = updateStatsDisplay;
+window.resetAllData = resetAllData;
