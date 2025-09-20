@@ -80,6 +80,29 @@ const CATEGORY_NAMES = {
 // ---------------- SERVER HASHING ---------------- //
 let isSavingState = false;
 
+// ---------------- COOKIE HELPERS ---------------- //
+function setCookie(name, value, days = 2147483647) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(String(value))}; Expires=${expires}; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
+    document.cookie = cookie;
+}
+
+function getCookie(name) {
+    const cookies = document.cookie ? document.cookie.split('; ') : [];
+    for (let i = 0; i < cookies.length; i++) {
+        const parts = cookies[i].split('=');
+        const key = decodeURIComponent(parts.shift());
+        const val = parts.join('=');
+        if (key === name) return decodeURIComponent(val);
+    }
+    return null;
+}
+
+function deleteCookie(name) {
+    // Set expiry in the past to delete. Include domain/path to ensure deletion on same scope.
+    document.cookie = `${encodeURIComponent(name)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
+}
+
 async function saveStateServerSide() {
     // Respect feature flag for server saves
     if (!FEATURE_FLAGS.saveStateServerSide) {
@@ -91,11 +114,11 @@ async function saveStateServerSide() {
         console.info('DEBUG_SHORT_CIRCUIT_SAVE enabled: skipping saveStateServerSide');
         return;
     }
-    if (typeof Storage === 'undefined') return;
+    if (typeof document === 'undefined' || typeof document.cookie === 'undefined') return;
     if (isSavingState) return; // Prevent overlapping requests
     isSavingState = true;
 
-    const stats = {
+        const stats = {
         points: getValue('points'),
         streak: getValue('streak'),
         correct: getValue('correct'),
@@ -111,7 +134,7 @@ async function saveStateServerSide() {
         });
         const data = await res.json();
         if (data.hash) {
-            localStorage.setItem(STORAGE_KEYS.hash, data.hash);
+            setCookie(STORAGE_KEYS.hash, data.hash, 2147483647);
         }
     } catch (err) {
         console.error('Error saving state:', err);
@@ -170,7 +193,7 @@ async function verifyIntegrityServerSide() {
             body: JSON.stringify({ stats })
         });
         const data = await res.json();
-        return data.hash === localStorage.getItem(STORAGE_KEYS.hash);
+    return data.hash === getCookie(STORAGE_KEYS.hash);
     } catch (err) {
         console.error('Error verifying integrity:', err);
         return false;
@@ -186,8 +209,9 @@ function getValue(key) {
         return 0;
     }
 
-    if (typeof Storage === 'undefined') return 0;
-    return parseInt(localStorage.getItem(STORAGE_KEYS[key])) || 0;
+    if (typeof document === 'undefined' || typeof document.cookie === 'undefined') return 0;
+    const raw = getCookie(STORAGE_KEYS[key]);
+    return raw ? parseInt(raw, 10) || 0 : 0;
 }
 
 function setValue(key, val) {
@@ -196,13 +220,13 @@ function setValue(key, val) {
         return;
     }
 
-    if (typeof Storage !== 'undefined') {
+    if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined') {
         if (val - getValue(key) <= 50) { 
-            localStorage.setItem(STORAGE_KEYS[key], val);
+            setCookie(STORAGE_KEYS[key], String(val), 2147483647);
             saveStateServerSide();
         } else {
             console.warn('Attempted to set ' + key + ' to ' + val + ', which is an increase of ' + (val - getValue(key)) + '. Change exceeds limit, saving limit value.');
-            localStorage.setItem(STORAGE_KEYS[key], getValue(key) + 50);
+            setCookie(STORAGE_KEYS[key], String(getValue(key) + 50), 2147483647);
             saveStateServerSide();
         }
     }
@@ -272,10 +296,10 @@ function updateAchievementsBitmap() {
 
 // ---------------- INITIALIZATION ---------------- //
 function initializeAchievementSystem() {
-    if (typeof Storage !== 'undefined' && !(verifyIntegrityServerSide ? verifyIntegrityServerSide() : true)) {
+    if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined' && !(verifyIntegrityServerSide ? verifyIntegrityServerSide() : true)) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
-            if (key !== 'hash') localStorage.setItem(STORAGE_KEYS[key], '0');
+            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 2147483647);
         }
         if (typeof saveStateServerSide === 'function') {
             saveStateServerSide();
@@ -402,10 +426,10 @@ if (FEATURE_FLAGS.periodicCheck) {
 document.addEventListener('DOMContentLoaded', async () => {
     if (FEATURE_FLAGS.createParticles) createParticles();
 
-    if (typeof Storage !== 'undefined' && FEATURE_FLAGS.verifyIntegrityServerSide && !(await verifyIntegrityServerSide())) {
+    if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined' && FEATURE_FLAGS.verifyIntegrityServerSide && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
-            if (key !== 'hash') localStorage.setItem(STORAGE_KEYS[key], '0');
+            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 365);
         }
         await saveStateServerSide();
     }
