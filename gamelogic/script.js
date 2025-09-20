@@ -2,20 +2,19 @@
 
 function reportNuggetCompletion(jsonData) {
     try {
-        // const data = JSON.parse(jsonData);
-        const data = { score: 1, tries: 1 }; // Stub json.parse
+        const data = JSON.parse(jsonData);
         const { score, tries } = data;
         
         // Calculate percentage
         const percentage = (score / tries) * 100;
         
         // Get current values using getValue function
-        let points = getValue('points');
-        let perfection = getValue('perfection');
-        let streak = getValue('streak');
-        let correct = getValue('correct');
-        let questions = getValue('questions');
-        const lastPlayed = getValue('lastPlayed');
+        let points = 10; // Start with base 10 points for completing
+        let perfection = 0;
+        let streak = 0;
+        let correct = 0;
+        let questions = 0;
+        const lastPlayed = 0;
         
         // Handle points based on accuracy
         if (percentage > 95) {
