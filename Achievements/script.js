@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
     achievementsBitmap: 'ach_achievements',
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
+const DEBUG_SHORT_CIRCUIT = true;
 
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
@@ -124,36 +125,41 @@ function createParticles() {
 
 // ---------------- VERIFY INTEGRITY ---------------- //
 async function verifyIntegrityServerSide() {
-    if (typeof Storage === 'undefined') return true;
-    const stats = {
-        points: getValue('points'),
-        streak: getValue('streak'),
-        correct: getValue('correct'),
-        questions: getValue('questions'),
-        perfection: getValue('perfection'),
-        badges: getValue('badges')
-    };
-    try {
-        const res = await fetch('/.netlify/functions/hash-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ stats })
-        });
-        const data = await res.json();
-        return data.hash === localStorage.getItem(STORAGE_KEYS.hash);
-    } catch (err) {
-        console.error('Error verifying integrity:', err);
-        return false;
-    }
+//     if (typeof Storage === 'undefined') return true;
+//     const stats = {
+//         points: getValue('points'),
+//         streak: getValue('streak'),
+//         correct: getValue('correct'),
+//         questions: getValue('questions'),
+//         perfection: getValue('perfection'),
+//         badges: getValue('badges')
+//     };
+//     try {
+//         const res = await fetch('/.netlify/functions/hash-stats', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ stats })
+//         });
+//         const data = await res.json();
+//         return data.hash === localStorage.getItem(STORAGE_KEYS.hash);
+//     } catch (err) {
+//         console.error('Error verifying integrity:', err);
+//         return false;
+//     }
+    return true;
 }
 
 // ---------------- STATE GET/SET ---------------- //
+// Debug flag: when true, short-circuit storage/stats operations to isolate performance issues
+
 function getValue(key) {
+    if (DEBUG_SHORT_CIRCUIT) return 0;
     if (typeof Storage === 'undefined') return 0;
     return parseInt(localStorage.getItem(STORAGE_KEYS[key])) || 0;
 }
 
 function setValue(key, val) {
+    if (DEBUG_SHORT_CIRCUIT) return;
     if (typeof Storage !== 'undefined') {
         if (val - getValue(key) <= 50) { 
             localStorage.setItem(STORAGE_KEYS[key], val);
@@ -241,6 +247,8 @@ function initializeAchievementSystem() {
 
 // ---------------- RENDER FUNCTIONS ---------------- //
 function updateStats() {
+    if (DEBUG_SHORT_CIRCUIT) return; // skip DOM updates during debug short-circuit
+
     const pointsElement = document.getElementById('points-display');
     const streakElement = document.getElementById('streak-display');
     const correctElement = document.getElementById('correct-display');
