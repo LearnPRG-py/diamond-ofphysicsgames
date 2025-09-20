@@ -11,9 +11,11 @@ const STORAGE_KEYS = {
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
 // Debug short-circuit for writes
-const DEBUG_SHORT_CIRCUIT_SET = true; // set to true to make setValue a no-op during debugging
+const DEBUG_SHORT_CIRCUIT_SET = false; // set to true to make setValue a no-op during debugging
 // Debug short-circuit for reads
-const DEBUG_SHORT_CIRCUIT_GET = true; // set to true to force getValue to return 0 during debugging
+const DEBUG_SHORT_CIRCUIT_GET = false; // set to true to force getValue to return 0 during debugging
+// Debug short-circuit for server save
+const DEBUG_SHORT_CIRCUIT_SAVE = true; // set to true to skip server-side saveState during debugging
 
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
@@ -66,6 +68,11 @@ const CATEGORY_NAMES = {
 let isSavingState = false;
 
 async function saveStateServerSide() {
+    // If debugging, skip server-side saves to isolate performance issues
+    if (typeof DEBUG_SHORT_CIRCUIT_SAVE !== 'undefined' && DEBUG_SHORT_CIRCUIT_SAVE) {
+        console.info('DEBUG_SHORT_CIRCUIT_SAVE enabled: skipping saveStateServerSide');
+        return;
+    }
     if (typeof Storage === 'undefined') return;
     if (isSavingState) return; // Prevent overlapping requests
     isSavingState = true;
@@ -128,27 +135,27 @@ function createParticles() {
 
 // ---------------- VERIFY INTEGRITY ---------------- //
 async function verifyIntegrityServerSide() {
-//     if (typeof Storage === 'undefined') return true;
-//     const stats = {
-//         points: getValue('points'),
-//         streak: getValue('streak'),
-//         correct: getValue('correct'),
-//         questions: getValue('questions'),
-//         perfection: getValue('perfection'),
-//         badges: getValue('badges')
-//     };
-//     try {
-//         const res = await fetch('/.netlify/functions/hash-stats', {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json' },
-//             body: JSON.stringify({ stats })
-//         });
-//         const data = await res.json();
-//         return data.hash === localStorage.getItem(STORAGE_KEYS.hash);
-//     } catch (err) {
-//         console.error('Error verifying integrity:', err);
-//         return false;
-//     }
+    if (typeof Storage === 'undefined') return true;
+    const stats = {
+        points: getValue('points'),
+        streak: getValue('streak'),
+        correct: getValue('correct'),
+        questions: getValue('questions'),
+        perfection: getValue('perfection'),
+        badges: getValue('badges')
+    };
+    try {
+        const res = await fetch('/.netlify/functions/hash-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stats })
+        });
+        const data = await res.json();
+        return data.hash === localStorage.getItem(STORAGE_KEYS.hash);
+    } catch (err) {
+        console.error('Error verifying integrity:', err);
+        return false;
+    }
     return true;
 }
 
