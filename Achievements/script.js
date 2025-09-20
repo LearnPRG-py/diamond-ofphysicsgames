@@ -11,11 +11,24 @@ const STORAGE_KEYS = {
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
 // Debug short-circuit for writes
-const DEBUG_SHORT_CIRCUIT_SET = false; // set to true to make setValue a no-op during debugging
+const DEBUG_SHORT_CIRCUIT_SET = false; // set to true to make setValue a no-op during debugging - can be false
 // Debug short-circuit for reads
-const DEBUG_SHORT_CIRCUIT_GET = false; // set to true to force getValue to return 0 during debugging
+const DEBUG_SHORT_CIRCUIT_GET = false; // set to true to force getValue to return 0 during debugging - can be false
 // Debug short-circuit for server save
-const DEBUG_SHORT_CIRCUIT_SAVE = true; // set to true to skip server-side saveState during debugging
+const DEBUG_SHORT_CIRCUIT_SAVE = false; // set to true to skip server-side saveState during debugging - can be false
+
+// Feature flags: set false to disable individual features while debugging
+const FEATURE_FLAGS = {
+    createParticles: false, // disable particles by default during debugging
+    saveStateServerSide: true,
+    verifyIntegrityServerSide: true,
+    updateStats: true,
+    renderAchievements: true,
+    updateAchievementsBitmap: true,
+    checkAchievementsAndUpdate: true,
+    periodicCheck: true,
+    postSetCheck: true
+};
 
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
@@ -68,6 +81,11 @@ const CATEGORY_NAMES = {
 let isSavingState = false;
 
 async function saveStateServerSide() {
+    // Respect feature flag for server saves
+    if (!FEATURE_FLAGS.saveStateServerSide) {
+        console.info('FEATURE_FLAGS.saveStateServerSide disabled: skipping saveStateServerSide');
+        return;
+    }
     // If debugging, skip server-side saves to isolate performance issues
     if (typeof DEBUG_SHORT_CIRCUIT_SAVE !== 'undefined' && DEBUG_SHORT_CIRCUIT_SAVE) {
         console.info('DEBUG_SHORT_CIRCUIT_SAVE enabled: skipping saveStateServerSide');
@@ -135,6 +153,7 @@ function createParticles() {
 
 // ---------------- VERIFY INTEGRITY ---------------- //
 async function verifyIntegrityServerSide() {
+    if (!FEATURE_FLAGS.verifyIntegrityServerSide) return true;
     if (typeof Storage === 'undefined') return true;
     const stats = {
         points: getValue('points'),
@@ -162,6 +181,7 @@ async function verifyIntegrityServerSide() {
 // ---------------- STATE GET/SET ---------------- //
 
 function getValue(key) {
+    if (!FEATURE_FLAGS.updateStats) return 0;
     // If debug short-circuit for reads is enabled, force a fast default value
     if (typeof DEBUG_SHORT_CIRCUIT_GET !== 'undefined' && DEBUG_SHORT_CIRCUIT_GET) {
         return 0;
@@ -193,6 +213,8 @@ function setValue(key, val) {
 let isUpdatingAchievements = false;
 
 function updateAchievementsBitmap() {
+    if (!FEATURE_FLAGS.updateAchievementsBitmap) return false;
+
     if (isUpdatingAchievements) {
         console.warn('Skipping achievement update to avoid recursion.');
         return false;
@@ -264,6 +286,8 @@ function initializeAchievementSystem() {
 
 // ---------------- RENDER FUNCTIONS ---------------- //
 function updateStats() {
+    if (!FEATURE_FLAGS.updateStats) return;
+
     const pointsElement = document.getElementById('points-display');
     const streakElement = document.getElementById('streak-display');
     const correctElement = document.getElementById('correct-display');
@@ -278,6 +302,7 @@ function updateStats() {
 }
 
 function renderAchievements() {
+    if (!FEATURE_FLAGS.renderAchievements) return;
     const container = document.getElementById('achievements-container');
     if (!container) return;
     
@@ -337,6 +362,7 @@ function renderAchievements() {
 
 // ---------------- ACHIEVEMENT CHECK ---------------- //
 function checkAchievementsAndUpdate() {
+    if (!FEATURE_FLAGS.checkAchievementsAndUpdate) return false;
     updateStats();
     const hasNewAchievements = updateAchievementsBitmap();
     
@@ -352,22 +378,26 @@ const originalSetValue = setValue;
 setValue = function(key, val) {
     originalSetValue(key, val);
 
-    // Delay achievement checking slightly, but won't overlap because of guards
-    setTimeout(() => {
-        checkAchievementsAndUpdate();
-    }, 50);
+    // Delay achievement checking slightly, but skip if flagged off
+    if (FEATURE_FLAGS.postSetCheck) {
+        setTimeout(() => {
+            checkAchievementsAndUpdate();
+        }, 50);
+    }
 };
 
 // ---------------- PERIODIC CHECK ---------------- //
-setInterval(() => {
-    checkAchievementsAndUpdate();
-}, 15000); // every 15 seconds
+if (FEATURE_FLAGS.periodicCheck) {
+    setInterval(() => {
+        checkAchievementsAndUpdate();
+    }, 15000); // every 15 seconds
+}
 
 // ---------------- DOM READY ---------------- //
 document.addEventListener('DOMContentLoaded', async () => {
-    createParticles();
+    if (FEATURE_FLAGS.createParticles) createParticles();
 
-    if (typeof Storage !== 'undefined' && !(await verifyIntegrityServerSide())) {
+    if (typeof Storage !== 'undefined' && FEATURE_FLAGS.verifyIntegrityServerSide && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
             if (key !== 'hash') localStorage.setItem(STORAGE_KEYS[key], '0');
