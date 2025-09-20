@@ -10,8 +10,6 @@ const STORAGE_KEYS = {
     achievementsBitmap: 'ach_achievements',
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
-const DEBUG_SHORT_CIRCUIT = true;
-
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
     points: [
@@ -150,16 +148,13 @@ async function verifyIntegrityServerSide() {
 }
 
 // ---------------- STATE GET/SET ---------------- //
-// Debug flag: when true, short-circuit storage/stats operations to isolate performance issues
 
 function getValue(key) {
-    if (DEBUG_SHORT_CIRCUIT) return 0;
     if (typeof Storage === 'undefined') return 0;
     return parseInt(localStorage.getItem(STORAGE_KEYS[key])) || 0;
 }
 
 function setValue(key, val) {
-    if (DEBUG_SHORT_CIRCUIT) return;
     if (typeof Storage !== 'undefined') {
         if (val - getValue(key) <= 50) { 
             localStorage.setItem(STORAGE_KEYS[key], val);
@@ -247,8 +242,6 @@ function initializeAchievementSystem() {
 
 // ---------------- RENDER FUNCTIONS ---------------- //
 function updateStats() {
-    if (DEBUG_SHORT_CIRCUIT) return; // skip DOM updates during debug short-circuit
-
     const pointsElement = document.getElementById('points-display');
     const streakElement = document.getElementById('streak-display');
     const correctElement = document.getElementById('correct-display');
