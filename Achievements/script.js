@@ -221,12 +221,32 @@ function setValue(key, val) {
     }
 
     if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined') {
-        if (val - getValue(key) <= 50) { 
+        // Keys that should NOT be subject to the "+50 cap" (bitmap, hashes, badges etc.)
+        const EXEMPT_FROM_CAP = ['achievementsBitmap', 'badges', 'hash'];
+
+        // If the key is exempt, write the value as-is (string) and skip numeric checks.
+        if (EXEMPT_FROM_CAP.includes(key)) {
             setCookie(STORAGE_KEYS[key], String(val), 2147483647);
             saveStateServerSide();
+            return;
+        }
+
+        // Coerce to number and validate for numeric stats
+        const numericVal = Number(val);
+        if (!Number.isFinite(numericVal)) {
+            console.warn(`Attempted to set ${key} to ${val}, which is not a finite number. Ignoring write.`);
+            return;
+        }
+
+        const current = getValue(key);
+        const delta = numericVal - current;
+
+        if (Math.abs(delta) <= 50) {
+            setCookie(STORAGE_KEYS[key], String(numericVal), 2147483647);
+            saveStateServerSide();
         } else {
-            console.warn('Attempted to set ' + key + ' to ' + val + ', which is an increase of ' + (val - getValue(key)) + '. Change exceeds limit, saving limit value.');
-            setCookie(STORAGE_KEYS[key], String(getValue(key) + 50), 2147483647);
+            console.warn(`Attempted to set ${key} to ${numericVal}, which is an increase of ${delta}. Change exceeds limit, saving limit value.`);
+            setCookie(STORAGE_KEYS[key], String(current + 50), 2147483647);
             saveStateServerSide();
         }
     }
@@ -279,7 +299,10 @@ function updateAchievementsBitmap() {
     // Compare numeric values to avoid writing the same numeric bitmap with differing string representations
     const newBitmapNum = Number.isFinite(Number(newBitmap)) ? Number(newBitmap) : 0;
     if (newBitmapNum !== oldBitmapNum) {
-        setValue('achievementsBitmap', newBitmapNum);
+        // Write bitmap directly (bitmap should not be subject to the +50 cap in setValue)
+        setCookie(STORAGE_KEYS.achievementsBitmap, String(newBitmapNum), 2147483647);
+        // Also update server-side hash/state if configured
+        if (FEATURE_FLAGS.saveStateServerSide) saveStateServerSide();
     }
     console.log('Finished updating achievements bitmap.');
     isUpdatingAchievements = false;
@@ -429,7 +452,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof document !== 'undefined' && typeof document.cookie !== 'undefined' && FEATURE_FLAGS.verifyIntegrityServerSide && !(await verifyIntegrityServerSide())) {
         console.warn('Data tampered or missing! Resetting...');
         for (let key in STORAGE_KEYS) {
-            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 365);
+            if (key !== 'hash') setCookie(STORAGE_KEYS[key], '0', 2147483647);
         }
         await saveStateServerSide();
     }

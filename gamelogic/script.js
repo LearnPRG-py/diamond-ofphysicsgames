@@ -2,8 +2,13 @@
 
 function reportNuggetCompletion(jsonData) {
     try {
+        console.log('reportNuggetCompletion called with data:', jsonData);
         const data = JSON.parse(jsonData);
-        const { score, tries } = data;
+        console.log('Nugget completed:', data);
+    let { score, tries } = data;
+    // Validate inputs to avoid NaN propagation
+    score = Number(score) || 0;
+    tries = Number(tries) || 1; // avoid div-by-zero and NaN
         
         // Calculate percentage
         const percentage = (score / tries) * 100;
@@ -51,17 +56,20 @@ function reportNuggetCompletion(jsonData) {
         //     points += streak; // Add 1 point for first streak
         // }
         
-        // Update correct and questions
-        correct += score;
-        questions += tries;
-        
-        // Use setValue function to save all updated values (pass numbers, not strings)
+    // Update correct and questions
+    correct += score;
+    questions += tries;
+    // Compute today's normalized timestamp for lastPlayed
+    const now = Date.now();
+    const today = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
+
+    // Use setValue function to save all updated values (pass numbers, not strings)
         setValue('points', points);
         setValue('perfection', perfection);
         setValue('streak', streak);
         setValue('correct', correct);
         setValue('questions', questions);
-        setValue('lastPlayed', today);
+    setValue('lastPlayed', today);
         
         console.log(`Game completed: Score ${score}/${tries} (${percentage.toFixed(1)}%)`);
         console.log(`Updated stats - Points: ${points}, Perfection: ${perfection}, Streak: ${streak}, Correct: ${correct}, Questions: ${questions}`);
