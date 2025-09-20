@@ -10,6 +10,9 @@ const STORAGE_KEYS = {
     achievementsBitmap: 'ach_achievements',
     lastPlayed: 'ach_last_played' // Added for tracking last play date
 };
+// Debug short-circuit for writes
+const DEBUG_SHORT_CIRCUIT_SET = true; // set to true to make setValue a no-op during debugging
+
 // ---------------- ACHIEVEMENTS DATA ---------------- //
 const ACHIEVEMENTS = {
     points: [
@@ -155,6 +158,11 @@ function getValue(key) {
 }
 
 function setValue(key, val) {
+    // If debug short-circuit is enabled, make setValue a no-op to isolate write-related lag
+    if (typeof DEBUG_SHORT_CIRCUIT_SET !== 'undefined' && DEBUG_SHORT_CIRCUIT_SET) {
+        return;
+    }
+
     if (typeof Storage !== 'undefined') {
         if (val - getValue(key) <= 50) { 
             localStorage.setItem(STORAGE_KEYS[key], val);
