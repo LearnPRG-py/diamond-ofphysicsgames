@@ -19,11 +19,13 @@ const DEBUG_SHORT_CIRCUIT_SAVE = false; // set to true to skip server-side saveS
 
 // Feature flags: set false to disable individual features while debugging
 const FEATURE_FLAGS = {
-    createParticles: true, // disable particles by default during debugging
+    //set all to false while debugging except the bottom half
+
+    createParticles: false, // disable particles by default during debugging
     saveStateServerSide: false,
-    verifyIntegrityServerSide: true,
-    updateStats: true,
-    renderAchievements: true,
+    verifyIntegrityServerSide: false,
+    updateStats: false,
+    renderAchievements: false,
     updateAchievementsBitmap: true,
     checkAchievementsAndUpdate: true,
     periodicCheck: true,
