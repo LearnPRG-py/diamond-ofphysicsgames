@@ -19,14 +19,11 @@ const DEBUG_SHORT_CIRCUIT_SAVE = false; // set to true to skip server-side saveS
 
 // Feature flags: set false to disable individual features while debugging
 const FEATURE_FLAGS = {
-    //set all to false while debugging except the bottom half
-    // issue is in top half - enable the top one by binary search
-    // issue is one of the bottlom two set to false currently
     createParticles: true, 
     saveStateServerSide: true,
     verifyIntegrityServerSide: true,
-    updateStats: true,
-    renderAchievements: false,
+    updateStats: true, //found the culprit here
+    renderAchievements: true,
     updateAchievementsBitmap: true,
     checkAchievementsAndUpdate: true,
     periodicCheck: true,
@@ -184,7 +181,6 @@ async function verifyIntegrityServerSide() {
 // ---------------- STATE GET/SET ---------------- //
 
 function getValue(key) {
-    if (!FEATURE_FLAGS.updateStats) return 0;
     // If debug short-circuit for reads is enabled, force a fast default value
     if (typeof DEBUG_SHORT_CIRCUIT_GET !== 'undefined' && DEBUG_SHORT_CIRCUIT_GET) {
         return 0;
@@ -224,7 +220,7 @@ function updateAchievementsBitmap() {
     }
 
     isUpdatingAchievements = true;
-
+    console.log('Updating achievements bitmap...');
     const oldBitmap = getValue('achievementsBitmap').toString() || '00000';
     let newBitmap = '';
     const newAchievements = [];
@@ -252,11 +248,12 @@ function updateAchievementsBitmap() {
         
         newBitmap += tierUnlocked;
     }
+    console.log('Old Bitmap:', oldBitmap, 'New Bitmap:', newBitmap);
     
     if (newBitmap !== oldBitmap) {
         setValue('achievementsBitmap', parseInt(newBitmap));
     }
-
+    console.log('Finished updating achievements bitmap.');
     isUpdatingAchievements = false;
 
     if (typeof addNewAchievement === 'function') {
@@ -264,6 +261,7 @@ function updateAchievementsBitmap() {
             addNewAchievement(ach.id, ach.icon, ach.title, ach.description);
         });
     }
+    console.log('New Achievements:', newAchievements);
     
     return newAchievements.length > 0;
 }
@@ -295,12 +293,12 @@ function updateStats() {
     const streakElement = document.getElementById('streak-display');
     const correctElement = document.getElementById('correct-display');
     const questionsElement = document.getElementById('questions-display');
-    
+    console.log('Updating stats display:')
     if (pointsElement) pointsElement.textContent = getValue('points').toLocaleString();
     if (streakElement) streakElement.textContent = getValue('streak');
     if (correctElement) correctElement.textContent = getValue('correct').toLocaleString();
     if (questionsElement) questionsElement.textContent = getValue('questions').toLocaleString();
-    
+    console.log('updated')
     updateAchievementsBitmap();
 }
 
