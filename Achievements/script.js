@@ -39,7 +39,7 @@ const ACHIEVEMENTS = {
         { threshold: 1000, name: "Point Hoarder", icon: "💰" },
         { threshold: 5000, name: "Master", icon: "👑" },
         { threshold: 10000, name: "Legendary", icon: "🏆" },
-        { threshold: 50000, name: "HOW DID WE GET HERE?!", icon: "🚀" }
+        { threshold: 50000, name: "PHYSICS GOD?!", icon: "👽" }
     ],
     streak: [
         { threshold: 7, name: "Week One Wonder", icon: "📅" },
@@ -47,25 +47,24 @@ const ACHIEVEMENTS = {
         { threshold: 30, name: "Month Maven", icon: "📆" },
         { threshold: 50, name: "Half-Century Hero", icon: "⭐" },
         { threshold: 100, name: "Century Streak", icon: "💯" },
-        { threshold: 365, name: "Daily Devotee", icon: "🌅" }
     ],
     correct: [
-        { threshold: 10, name: "A Start", icon: "✅" },
-        { threshold: 100, name: "Getting It", icon: "🧠" },
-        { threshold: 1000, name: "Decent Brain", icon: "🎯" },
-        { threshold: 10000, name: "Quiz Master", icon: "🏅" }
+        { threshold: 1, name: "A Start", icon: "✅" },
+        { threshold: 10, name: "Getting It", icon: "✅" },
+        { threshold: 100, name: "Brainiac", icon: "🧠" },
+        { threshold: 1000, name: "Quiz Master", icon: "🏅" }
     ],
     questions: [
-        { threshold: 10, name: "Questionable Start", icon: "❓" },
-        { threshold: 100, name: "Curious Mind", icon: "🤔" },
-        { threshold: 1000, name: "Question Hoarder", icon: "📝" },
-        { threshold: 10000, name: "Quizzilla", icon: "📊" }
+        { threshold: 1, name: "Questionable Start", icon: "❓" },
+        { threshold: 10, name: "Curious Mind", icon: "🤔" },
+        { threshold: 100, name: "Question Hoarder", icon: "📝" },
+        { threshold: 1000, name: "Quizzilla", icon: "📊" }
     ],
     perfection: [
-        { threshold: 10, name: "Near Perfect", icon: "⚡" },
-        { threshold: 100, name: "Excellence", icon: "🎪" },
-        { threshold: 1000, name: "Perfectionist", icon: "💫" },
-        { threshold: 10000, name: "Flawless Legend", icon: "🌟" }
+        { threshold: 1, name: "Near Perfect", icon: "⚡" },
+        { threshold: 10, name: "Excellence", icon: "🎪" },
+        { threshold: 100, name: "Perfectionist", icon: "💫" },
+        { threshold: 500, name: "Flawless Legend", icon: "🌟" }
     ]
 };
 

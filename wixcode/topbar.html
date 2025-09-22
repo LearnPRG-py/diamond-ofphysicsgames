@@ -77,10 +77,42 @@
     
     <script>
     const STORAGE_KEYS={points:'ach_points',streak:'ach_streak',achievementsBitmap:'ach_bitmap'};
-    const ACHIEVEMENTS={
-    points:[{threshold:10,name:"First Points",icon:"🌟",description:"Earned your first 10 points!"},{threshold:50,name:"Point Collector",icon:"💎",description:"Reached 50 points!"},{threshold:100,name:"Century Club",icon:"💯",description:"Hit 100 points!"},{threshold:500,name:"Point Master",icon:"🏆",description:"Achieved 500 points!"},{threshold:1000,name:"Point Legend",icon:"👑",description:"Reached 1000 points!"}],
-    streak:[{threshold:3,name:"Getting Hot",icon:"🔥",description:"3 day streak!"},{threshold:7,name:"Week Warrior",icon:"⚡",description:"7 day streak!"},{threshold:14,name:"Two Weeks Strong",icon:"💪",description:"14 day streak!"},{threshold:30,name:"Month Master",icon:"🗓️",description:"30 day streak!"},{threshold:100,name:"Streak Legend",icon:"🚀",description:"100 day streak!"}]
-    };
+    const ACHIEVEMENTS = {
+    points: [
+        { threshold: 50, name: "Getting Started", icon: "🌟" },
+        { threshold: 200, name: "Point Collector", icon: "💎" },
+        { threshold: 500, name: "Rising Scholar", icon: "📚" },
+        { threshold: 1000, name: "Point Hoarder", icon: "💰" },
+        { threshold: 5000, name: "Master", icon: "👑" },
+        { threshold: 10000, name: "Legendary", icon: "🏆" },
+        { threshold: 50000, name: "PHYSICS GOD?!", icon: "👽" }
+    ],
+    streak: [
+        { threshold: 7, name: "Week One Wonder", icon: "📅" },
+        { threshold: 10, name: "Double Digits", icon: "🔟" },
+        { threshold: 30, name: "Month Maven", icon: "📆" },
+        { threshold: 50, name: "Half-Century Hero", icon: "⭐" },
+        { threshold: 100, name: "Century Streak", icon: "💯" },
+    ],
+    correct: [
+        { threshold: 1, name: "A Start", icon: "✅" },
+        { threshold: 10, name: "Getting It", icon: "✅" },
+        { threshold: 100, name: "Brainiac", icon: "🧠" },
+        { threshold: 1000, name: "Quiz Master", icon: "🏅" }
+    ],
+    questions: [
+        { threshold: 1, name: "Questionable Start", icon: "❓" },
+        { threshold: 10, name: "Curious Mind", icon: "🤔" },
+        { threshold: 100, name: "Question Hoarder", icon: "📝" },
+        { threshold: 1000, name: "Quizzilla", icon: "📊" }
+    ],
+    perfection: [
+        { threshold: 1, name: "Near Perfect", icon: "⚡" },
+        { threshold: 10, name: "Excellence", icon: "🎪" },
+        { threshold: 100, name: "Perfectionist", icon: "💫" },
+        { threshold: 500, name: "Flawless Legend", icon: "🌟" }
+    ]
+};
     function setCookie(n,v,d=2147483647){const e=new Date(Date.now()+d*864e5).toUTCString();document.cookie=`${encodeURIComponent(n)}=${encodeURIComponent(String(v))}; Expires=${e}; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`}
     function getCookie(n){const c=document.cookie?document.cookie.split('; '):[];for(let i=0;i<c.length;i++){const p=c[i].split('=');const k=decodeURIComponent(p.shift());const v=p.join('=');if(k===n)return decodeURIComponent(v)}return null}
     let localSecret=null;
@@ -104,3 +136,4 @@
     if(!window.achievementBarInitialized){window.achievementBarInitialized=true;document.addEventListener('DOMContentLoaded',function(){updateStatsDisplay();createBarParticles();loadPendingAchievements();if(typeof checkAchievementsAndUpdate==='function'){setTimeout(()=>{checkAchievementsAndUpdate()},100)}setTimeout(()=>{processAchievementQueue()},1000)});window.addEventListener('focus',function(){updateStatsDisplay();loadPendingAchievements();if(typeof checkAchievementsAndUpdate==='function'){setTimeout(()=>{checkAchievementsAndUpdate()},100)}setTimeout(()=>{processAchievementQueue()},500)});setTimeout(()=>{if(document.readyState==='complete'){loadPendingAchievements();processAchievementQueue()}},2000)}
     window.getValue=getValue;window.setValue=setValue;window.updateStatsDisplay=updateStatsDisplay;window.initializeLocalSecret=initializeLocalSecret;window.decryptValue=decryptValue;window.isValueEncrypted=isValueEncrypted;window.checkAchievementBitmap=checkAchievementBitmap;window.processAchievementQueue=processAchievementQueue;window.processAchievementQueue=processAchievementQueue;window.clearPendingAchievements=clearPendingAchievements;
     </script>
+
