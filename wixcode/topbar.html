@@ -121,6 +121,15 @@
     function isValueEncrypted(v){const n=parseInt(v,10);return !isNaN(n)&&Math.abs(n)>100000}
     const RANK_THRESHOLDS=[{threshold:50,name:"Getting Started",icon:"🌟"},{threshold:200,name:"Point Collector",icon:"💎"},{threshold:500,name:"Rising Scholar",icon:"📚"},{threshold:1000,name:"Point Hoarder",icon:"💰"},{threshold:5000,name:"Master",icon:"👑"},{threshold:10000,name:"Legendary",icon:"🏆"},{threshold:50000,name:"HOW DID WE GET HERE?!",icon:"🚀"}];
     const DEFAULT_RANK={name:"New Student",icon:"👤"};
+    // Added missing function
+    function getCurrentRank(points) {
+        for (let i = RANK_THRESHOLDS.length - 1; i >= 0; i--) {
+            if (points >= RANK_THRESHOLDS[i].threshold) {
+                return RANK_THRESHOLDS[i];
+            }
+        }
+        return DEFAULT_RANK;
+    } 
     let pendingAchievements=[],isProcessingAchievements=false;
     function loadPendingAchievements(){try{const stored=getCookie('pending_achievements');pendingAchievements=stored?JSON.parse(stored):[]}catch(e){pendingAchievements=[]}}
     function savePendingAchievements(){try{setCookie('pending_achievements',JSON.stringify(pendingAchievements),1)}catch(e){}}
@@ -134,6 +143,5 @@
     function updateStatsDisplay(){const p=getValue('points'),s=getValue('streak'),r=getCurrentRank(p);const se=document.getElementById('streak-number');if(se)se.textContent=s;const ri=document.getElementById('rank-icon'),rn=document.getElementById('rank-name'),pt=document.getElementById('points-text');if(ri)ri.textContent=r.icon;if(rn)rn.textContent=r.name;if(pt)pt.textContent=`${p.toLocaleString()} points`;checkAchievementBitmap();if(pendingAchievements.length>0&&!isProcessingAchievements){processAchievementQueue()}}
     function showAchievementNotification(i,t,d){const p=document.getElementById('achievement-popup'),ic=document.getElementById('popup-icon'),ti=document.getElementById('popup-title'),de=document.getElementById('popup-desc');if(!p||!ic||!ti||!de)return;ic.textContent=i;ti.textContent=t;de.textContent=d;p.classList.add('show');setTimeout(()=>{p.classList.remove('show')},4000)}
     if(!window.achievementBarInitialized){window.achievementBarInitialized=true;document.addEventListener('DOMContentLoaded',function(){updateStatsDisplay();createBarParticles();loadPendingAchievements();if(typeof checkAchievementsAndUpdate==='function'){setTimeout(()=>{checkAchievementsAndUpdate()},100)}setTimeout(()=>{processAchievementQueue()},1000)});window.addEventListener('focus',function(){updateStatsDisplay();loadPendingAchievements();if(typeof checkAchievementsAndUpdate==='function'){setTimeout(()=>{checkAchievementsAndUpdate()},100)}setTimeout(()=>{processAchievementQueue()},500)});setTimeout(()=>{if(document.readyState==='complete'){loadPendingAchievements();processAchievementQueue()}},2000)}
-    window.getValue=getValue;window.setValue=setValue;window.updateStatsDisplay=updateStatsDisplay;window.initializeLocalSecret=initializeLocalSecret;window.decryptValue=decryptValue;window.isValueEncrypted=isValueEncrypted;window.checkAchievementBitmap=checkAchievementBitmap;window.processAchievementQueue=processAchievementQueue;window.processAchievementQueue=processAchievementQueue;window.clearPendingAchievements=clearPendingAchievements;
+    window.getValue=getValue;window.setValue=setValue;window.updateStatsDisplay=updateStatsDisplay;window.initializeLocalSecret=initializeLocalSecret;window.decryptValue=decryptValue;window.isValueEncrypted=isValueEncrypted;window.checkAchievementBitmap=checkAchievementBitmap;window.processAchievementQueue=processAchievementQueue;window.processAchievementQueue=processAchievementQueue;window.clearPendingAchievements=clearPendingAchievements;window.getCurrentRank=getCurrentRank;
     </script>
-
