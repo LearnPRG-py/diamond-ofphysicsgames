@@ -431,7 +431,7 @@ function resetAllData() {
     
     // alert('Achievement data has been reset! The page will now reload.');
     
-    window.location.reload(); 
+    // window.location.reload(); 
 }
 
 // ---------------- KEYBOARD SEQUENCE DETECTOR (Keep as is) ---------------- //
