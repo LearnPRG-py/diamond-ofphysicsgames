@@ -85,7 +85,6 @@ function initializeLocalSecret() {
             localSecret = parseInt(existingSecret, 10);
         } else {
             localSecret = Math.floor(Math.random() * 10000);
-            // PATCH: Using fixed setCookie, so the secret persists.
             setCookie('ach_local_secret', String(localSecret)); 
         }
     }
@@ -105,7 +104,6 @@ function decryptValue(encryptedValue) {
 // ---------------- COOKIE HELPERS ---------------- //
 // P0 FIX: Changed default days to a non-overflowing 100 years (36525 days)
 function setCookie(name, value, days = 36525) {
-    // 864e5 is 86400000 (ms in a day)
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(String(value))}; Expires=${expires}; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
     document.cookie = cookie;
@@ -123,7 +121,6 @@ function getCookie(name) {
 }
 
 function deleteCookie(name) {
-    // Set expiry in the past to delete.
     document.cookie = `${encodeURIComponent(name)}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
 }
 
@@ -184,13 +181,20 @@ function getValue(key) {
             const decrypted = decryptValue(rawValue);
             if (decrypted >= 0 && decrypted < 1000000) {
                 return decrypted;
+            } else {
+                // PATCH: Decrypting resulted in a value outside the expected range (e.g., negative or too large).
+                console.warn(`Decryption of ${key} resulted in an unexpected value: ${decrypted}. Treating as corrupt.`);
+                return -1; // Return signal for corruption
             }
         } catch (error) {
+            // PATCH: Decryption failed (e.g., local secret is gone/wrong).
             console.warn(`Failed to decrypt ${key}:`, error);
+            return -1; // Return signal for corruption
         }
     }
     
-    return rawValue;
+    // If it's a small value (<= 1,000,000), treat it as an unencrypted stat.
+    return (rawValue >= 0) ? rawValue : 0;
 }
 
 function setValue(key, val) {
@@ -202,7 +206,6 @@ function setValue(key, val) {
         const EXEMPT_FROM_CAP = ['achievementsBitmap', 'badges', 'hash'];
 
         if (EXEMPT_FROM_CAP.includes(key)) {
-            // PATCH: Using fixed setCookie
             setCookie(STORAGE_KEYS[key], String(val)); 
             return;
         }
@@ -213,8 +216,6 @@ function setValue(key, val) {
             return;
         }
 
-        // IMPORTANT: getValue here must call the *original* getValue, but since getValue is not being
-        // overridden like setValue, it's fine.
         const current = getValue(key); 
         const delta = numericVal - current;
 
@@ -226,11 +227,9 @@ function setValue(key, val) {
 
         try {
             const encryptedValue = encryptValue(valueToSave);
-            // PATCH: Using fixed setCookie
             setCookie(STORAGE_KEYS[key], String(encryptedValue)); 
         } catch (error) {
             console.error(`Failed to encrypt ${key}, saving unencrypted:`, error);
-            // PATCH: Using fixed setCookie
             setCookie(STORAGE_KEYS[key], String(valueToSave)); 
         }
     }
@@ -282,7 +281,6 @@ function updateAchievementsBitmap() {
 
     const newBitmapNum = Number.isFinite(Number(newBitmap)) ? Number(newBitmap) : 0;
     if (newBitmapNum !== oldBitmapNum) {
-        // PATCH: Using fixed setCookie
         setCookie(STORAGE_KEYS.achievementsBitmap, String(newBitmapNum));
     }
     
@@ -301,7 +299,6 @@ function updateAchievementsBitmap() {
 function initializeAchievementSystem() {
     initializeLocalSecret();
     
-    // updateStats() calls updateAchievementsBitmap(). This is the intended flow.
     updateStats(); 
     if (typeof renderAchievements === 'function') {
         renderAchievements();
@@ -322,7 +319,6 @@ function updateStats() {
     if (correctElement) correctElement.textContent = getValue('correct').toLocaleString();
     if (questionsElement) questionsElement.textContent = getValue('questions').toLocaleString();
     
-    // updateAchievementsBitmap() is called here. This is NOT recursion, it's flow.
     updateAchievementsBitmap(); 
 }
 
@@ -332,7 +328,7 @@ function renderAchievements() {
     if (!container) return;
     
     container.innerHTML = '';
-    // ... (rest of renderAchievements function is fine) ...
+    
     for (const category in ACHIEVEMENTS) {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'category-section';
@@ -388,14 +384,13 @@ function renderAchievements() {
 // ---------------- ACHIEVEMENT CHECK ---------------- //
 function checkAchievementsAndUpdate() {
     if (!FEATURE_FLAGS.checkAchievementsAndUpdate) return false;
-    // updateStats calls updateAchievementsBitmap() and then renders.
     updateStats(); 
     
     if (typeof renderAchievements === 'function') {
         renderAchievements();
     }
     
-    return false; // updateAchievementsBitmap already handles notifications
+    return false;
 }
 const originalSetValueFunction = setValue; 
 
@@ -420,18 +415,15 @@ if (FEATURE_FLAGS.periodicCheck) {
 function resetAllData() {
     console.log('Resetting all achievement data...');
     
-    // List of cookies to clear (based on STORAGE_KEYS and the secret)
     const cookiesToClear = [
         ...Object.values(STORAGE_KEYS),
         'ach_local_secret'
     ];
     
-    // Clear each cookie
     cookiesToClear.forEach(cookieName => {
         deleteCookie(cookieName);
     });
     
-    // Clear the in-memory secret and re-initialize the system to defaults (0)
     localSecret = null;
     initializeAchievementSystem();
     
@@ -439,11 +431,10 @@ function resetAllData() {
     
     alert('Achievement data has been reset! The page will now reload.');
     
-    // Reload page to ensure all dependencies update cleanly
     window.location.reload(); 
 }
 
-// ---------------- KEYBOARD SEQUENCE DETECTOR (Consolidated and Fixed) ---------------- //
+// ---------------- KEYBOARD SEQUENCE DETECTOR (Keep as is) ---------------- //
 let keySequence = '';
 let sequenceTimeout;
 
@@ -486,32 +477,34 @@ document.addEventListener('keydown', function(event) {
 console.log('Reset keyboard listener initialized. Type "Reset!!!" to clear achievement data.');
 
 
-// ---------------- DOM READY ---------------- //
+// ---------------- DOM READY (Finalized Corruption Check) ---------------- //
 document.addEventListener('DOMContentLoaded', async () => {
     if (FEATURE_FLAGS.createParticles) createParticles();
+    
+    // IMPORTANT: initializeLocalSecret() is implicitly called by getValue() first time.
 
     // Check for corrupted data and reset if needed
+    // NOTE: getValue() now returns -1 on decryption failure/corruption.
     const points = getValue('points');
     const streak = getValue('streak');
     const correct = getValue('correct');
     const questions = getValue('questions');
     
-    // If any value is negative or suspiciously large, reset everything
+    // The check for < 0 now catches both genuinely negative values AND the -1 corruption signal!
     if (points < 0 || streak < 0 || correct < 0 || questions < 0 || 
         points > 1000000 || streak > 1000000 || correct > 1000000 || questions > 1000000) {
-        console.warn('Detected corrupted data, resetting...');
+        console.warn('Detected corrupted data (value < 0 or > 1M), resetting...');
         resetAllData();
         return;
     }
     
-    // Initializing the whole system
+    // Initializing the whole system if no corruption was found
     initializeAchievementSystem();
 });
 
-// ✅ Expose functions globally (assuming addNewAchievement and updateStatsDisplay are defined elsewhere)
-// You may need to define stubs for these if they don't exist.
-window.addNewAchievement = addNewAchievement; 
+// ✅ Expose functions globally
+window.addNewAchievement = typeof addNewAchievement !== 'undefined' ? addNewAchievement : () => {}; 
 window.getValue = getValue;
 window.setValue = setValue;
-window.updateStatsDisplay = updateStatsDisplay; 
+window.updateStatsDisplay = typeof updateStatsDisplay !== 'undefined' ? updateStatsDisplay : updateStats; 
 window.resetAllData = resetAllData;
