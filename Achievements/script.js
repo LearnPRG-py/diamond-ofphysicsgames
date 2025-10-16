@@ -108,7 +108,7 @@ function decryptValue(encryptedValue) {
 }
 
 // ---------------- COOKIE HELPERS ---------------- //
-function setCookie(name, value, days = 2147483647) {
+function setCookie(name, value, days = 365250) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     const cookie = `${encodeURIComponent(name)}=${encodeURIComponent(String(value))}; Expires=${expires}; Path=/; Domain=.quarklearning.online; Secure; SameSite=None`;
     document.cookie = cookie;
