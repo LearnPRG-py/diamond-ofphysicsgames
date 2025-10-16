@@ -429,7 +429,7 @@ function resetAllData() {
     
     console.log('All achievement data cleared and re-initialized. Reloading page...');
     
-    alert('Achievement data has been reset! The page will now reload.');
+    // alert('Achievement data has been reset! The page will now reload.');
     
     window.location.reload(); 
 }
