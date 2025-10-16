@@ -84,7 +84,7 @@ function initializeLocalSecret() {
         if (existingSecret) {
             localSecret = parseInt(existingSecret, 10);
         } else {
-            localSecret = Math.floor(Math.random() * 10000);
+            localSecret = Math.floor(Math.random() * 9000+1000);
             setCookie('ach_local_secret', String(localSecret)); 
         }
     }
