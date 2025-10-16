@@ -5,10 +5,10 @@ function reportNuggetCompletion(jsonData) {
         console.log('reportNuggetCompletion called with data:', jsonData);
         const data = JSON.parse(jsonData);
         console.log('Nugget completed:', data);
-    let { score, tries } = data;
-    // Validate inputs to avoid NaN propagation
-    score = Number(score) || 0;
-    tries = Number(tries) || 1; // avoid div-by-zero and NaN
+        let { score, tries } = data;
+        // Validate inputs to avoid NaN propagation
+        score = Number(score) || 0;
+        tries = Number(tries) || 1; // avoid div-by-zero and NaN
         
         // Calculate percentage
         const percentage = (score / tries) * 100;
@@ -19,7 +19,11 @@ function reportNuggetCompletion(jsonData) {
         let streak = getValue('streak');
         let correct = getValue('correct');
         let questions = getValue('questions');
-        const lastPlayed = getValue('lastPlayed');
+        const lastPlayedRaw = getValue('lastPlayed'); // Get the timestamp
+        
+        // Compute today's normalized timestamp (midnight start)
+        const now = Date.now();
+        const todayNormalized = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
         
         // Handle points based on accuracy
         if (percentage > 95) {
@@ -29,53 +33,44 @@ function reportNuggetCompletion(jsonData) {
             points += 30;
             perfection += 1;
         } else {
-            points += 20; // Just completed
+            points += 20; // Just completed, no %age
         }
         
-        // Handle streak logic
-        // const now = new Date();
-        // const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const ONE_DAY_MS = 1000 * 60 * 60 * 24;
         
-        // if (lastPlayed > 0) {
-        //     const daysDiff = Math.floor((today - lastPlayed) / (1000 * 60 * 60 * 24));
+        if (lastPlayedRaw < todayNormalized) {
             
-        //     if (daysDiff === 1) {
-        //         // Played yesterday, increment streak
-        //         streak += 1;
-        //         const streakPoints = Math.min(streak, 50); // Cap streak points at 50
-        //         points += streakPoints;
-        //     } else if (daysDiff >= 2) {
-        //         // Gap of 2+ days, reset streak
-        //         streak = 1;
-        //         points += streak; // Add 1 point for streak reset
-        //     }
-        //     // If daysDiff === 0 (same day), don't change streak or add streak points
-        // } else {
-        //     // First time playing, set streak to 1
-        //     streak = 1;
-        //     points += streak; // Add 1 point for first streak
-        // }
-        
-    // Update correct and questions
-    correct += score;
-    questions += tries;
-    // Compute today's normalized timestamp for lastPlayed
-    const now = Date.now();
-    const today = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
+            const yesterdayNormalized = todayNormalized - ONE_DAY_MS;
 
-    // Use setValue function to save all updated values (pass numbers, not strings)
+            if (lastPlayedRaw === yesterdayNormalized) {
+                streak += 1;
+            } else {
+                streak = 1;
+            }
+
+            // Award points for the streak
+            const streakPoints = Math.min(streak, 50); 
+            points += streakPoints;
+            
+            setValue('lastPlayed', todayNormalized);
+        } 
+
+        // Update correct and questions
+        correct += score;
+        questions += tries;
+
+        // Use setValue function to save all updated values (pass numbers, not strings)
         setValue('points', points);
         setValue('perfection', perfection);
         setValue('streak', streak);
         setValue('correct', correct);
         setValue('questions', questions);
-    setValue('lastPlayed', today);
-        
+
         console.log(`Game completed: Score ${score}/${tries} (${percentage.toFixed(1)}%)`);
         console.log(`Updated stats - Points: ${points}, Perfection: ${perfection}, Streak: ${streak}, Correct: ${correct}, Questions: ${questions}`);
         
     } catch (error) {
         console.error('Error processing game completion:', error);
     }
-return 0;
+    return 0;
 }
