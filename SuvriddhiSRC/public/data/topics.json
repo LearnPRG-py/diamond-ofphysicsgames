@@ -4,6 +4,12 @@
     "title": "Mechanics",
     "items": [
       {
+        "id": "kinematics_content",
+        "type": "lesson",
+        "title": "Introduction to Kinematics",
+        "contentFile": "topics/PDFContent/kinematicspdf.html"
+      },
+      {
         "id": "mechanics_intro",
         "type": "lesson",
         "title": "Introduction to Mechanics",
@@ -23,7 +29,7 @@
       },
       {
         "id": "mechanics_energy",
-        "type": "exercise",
+        "type": "quiz",
         "title": "Conservation of Energy",
         "contentFile": "topics/mechanics/energy.html",
         "tests": [
