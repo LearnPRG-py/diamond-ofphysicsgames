@@ -1,91 +1,67 @@
 [
   {
-    "id": "intro_c",
-    "title": "Intro to C",
+    "id": "mechanics",
+    "title": "Mechanics",
     "items": [
       {
-        "id": "intro_what_is_c",
+        "id": "mechanics_intro",
         "type": "lesson",
-        "title": "What is C?",
-        "contentFile": "topics/intro/what_is_c.html"
+        "title": "Introduction to Mechanics",
+        "contentFile": "topics/mechanics/intro.html"
       },
       {
-        "id": "intro_first_program",
+        "id": "mechanics_motion",
         "type": "lesson",
-        "title": "Your First Program",
-        "contentFile": "topics/intro/first_program.html"
+        "title": "Motion in One Dimension",
+        "contentFile": "topics/mechanics/motion.html"
       },
       {
-        "id": "intro_variables",
+        "id": "mechanics_forces",
         "type": "lesson",
-        "title": "Variables",
-        "contentFile": "topics/intro/variables.html"
+        "title": "Forces and Newton's Laws",
+        "contentFile": "topics/mechanics/forces.html"
       },
       {
-        "id": "intro_print_hello",
+        "id": "mechanics_energy",
         "type": "exercise",
-        "title": "Print 'Hello, World!'",
-        "contentFile": "topics/intro/print_hello.html",
+        "title": "Conservation of Energy",
+        "contentFile": "topics/mechanics/energy.html",
         "tests": [
           {
-            "input": "",
-            "expected": "Hello, World!\n"
+            "input": "10 5",
+            "expected": "250"
           }
         ]
       }
     ]
   },
   {
-    "id": "variables",
-    "title": "Variables and Data Types",
+    "id": "waves",
+    "title": "Waves and Oscillations",
     "items": [
       {
-        "id": "variables_overview",
+        "id": "waves_intro",
         "type": "lesson",
-        "title": "Overview of Variables",
-        "icon": "book",
-        "path": "lessons/variables_overview.json"
+        "title": "Introduction to Waves",
+        "contentFile": "topics/waves/intro.html"
       },
       {
-        "id": "variables_exercise1",
-        "type": "exercise",
-        "title": "Create and Print Variables",
-        "icon": "terminal",
-        "path": "exercises/variables_exercise1.json"
-      },
-      {
-        "id": "variables_exercise2",
-        "type": "exercise",
-        "title": "Sum of Two Integers",
-        "icon": "terminal",
-        "path": "exercises/variables_exercise2.json"
-      }
-    ]
-  },
-  {
-    "id": "control_flow",
-    "title": "Control Flow",
-    "items": [
-      {
-        "id": "control_ifelse",
+        "id": "waves_types",
         "type": "lesson",
-        "title": "If, Else, and Conditions",
-        "icon": "book",
-        "path": "lessons/control_ifelse.json"
+        "title": "Types of Waves",
+        "contentFile": "topics/waves/types.html"
       },
       {
-        "id": "control_loops",
-        "type": "lesson",
-        "title": "Loops in C",
-        "icon": "book",
-        "path": "lessons/control_loops.json"
-      },
-      {
-        "id": "control_exercise1",
+        "id": "waves_sound",
         "type": "exercise",
-        "title": "Even or Odd Checker",
-        "icon": "terminal",
-        "path": "exercises/control_exercise1.json"
+        "title": "Sound Wave Properties",
+        "contentFile": "topics/waves/sound.html",
+        "tests": [
+          {
+            "input": "343 440",
+            "expected": "0.78"
+          }
+        ]
       }
     ]
   }

@@ -9,7 +9,8 @@ import "ace-builds/src-noconflict/ext-language_tools";
 
 export default function ExerciseView({ item, onMarkComplete }: { item: ExerciseItem; onMarkComplete: () => void; }) {
 
-    const starterCode = "#include <stdio.h>\nint main() {\n\t\n\t\n\t\n\treturn 0;\n}\n";
+    // No more C code template
+    const starterCode = "";
 
     const { getDraftForExercise, saveDraftForExercise } = useStore();
     const [descriptionHtml, setDescriptionHtml] = useState<string | null>(null);

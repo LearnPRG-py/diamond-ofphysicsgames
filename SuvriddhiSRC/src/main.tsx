@@ -7,15 +7,15 @@ import "./styles/fonts.css";
 
 import Home from "./pages/Home";
 import Learn from "./pages/Learn";
-import Train from "./pages/Train";
-import Sandbox from "./pages/Sandbox";
+import Achievements from "./pages/Achievements";
+import Notes from "./pages/Notes";
 import Settings from "./pages/Settings";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
   { path: "/learn", element: <Learn /> },
-  { path: "/train", element: <Train /> },
-  { path: "/sandbox", element: <Sandbox /> },
+  { path: "/achievements", element: <Achievements /> },
+  { path: "/notes", element: <Notes /> },
   { path: "/settings", element: <Settings /> },
 ]);
 

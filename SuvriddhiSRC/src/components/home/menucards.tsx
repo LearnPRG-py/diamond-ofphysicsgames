@@ -2,9 +2,9 @@ import { BicepsFlexed, BookOpen, Code2 } from "lucide-react";
 import { Link } from "react-router";
 
 const buttons = [
-    { id: 0, title: "Learn", desc: "Learn with structured lessons and exercises", icon: <BookOpen size={32} />, to: "/learn" },
-    { id: 1, title: "Train", desc: "Practice additional drills to strengthen your skills", icon: <BicepsFlexed size={32} />, to: "/train" },
-    { id: 2, title: "Sandbox", desc: "Experiment freely with code", icon: <Code2 size={32} />, to: "/sandbox" },
+    { id: 0, title: "Learn", desc: "Explore interactive physics simulations and lessons", icon: <BookOpen size={32} />, to: "/learn" },
+    { id: 1, title: "Achievements", desc: "Track your progress and unlock rewards", icon: <BicepsFlexed size={32} />, to: "/achievements" },
+    { id: 2, title: "Notes", desc: "Take and organize your study notes", icon: <Code2 size={32} />, to: "/notes" },
 ];
 
 export default function MenuCards() {

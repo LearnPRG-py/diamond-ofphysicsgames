@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import type { LanguageType } from "../types/language";
+import type { SubjectType } from "../types/subject";
 import type { ActiveItem, Topic } from "../types/learningitems";
 import { getTopicProgress } from "../utils/getTopicProgress";
 
 interface Store {
-  language: LanguageType;
-  setLanguage: (lang: LanguageType) => void;
+  subject: SubjectType;
+  setSubject: (subject: SubjectType) => void;
 
   lastActivity: ActiveItem | null;
   setLastActivity: (item: ActiveItem) => void;
@@ -21,8 +21,8 @@ interface Store {
 }
 
 export const useStore = create<Store>((set, get) => ({
-  language: "C",
-  setLanguage: (language) => set({ language }),
+  subject: "Physics",
+  setSubject: (subject: SubjectType) => set({ subject }),
   lastActivity: null,
   setLastActivity: (la) => set({ lastActivity: la }),
   completed: {},

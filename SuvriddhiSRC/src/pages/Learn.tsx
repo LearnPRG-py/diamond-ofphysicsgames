@@ -7,7 +7,7 @@ import ExerciseView from "../components/learn/exerciseview";
 
 
 export default function Learn() {
-  const { lastActivity, setLastActivity, markItemCompleted } = useStore();
+  const { lastActivity, setLastActivity, markItemCompleted, subject } = useStore();
 
 
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -59,7 +59,7 @@ export default function Learn() {
 
 
   return (
-    <div className="min-h-screen flex overflow-hidden h-screen font-display">
+    <div className={`min-h-screen flex overflow-hidden h-screen font-display theme-${subject}`}>
       <Sidebar topics={topics} activeTopicId={active?.topicId} activeItemId={active?.itemId} onOpenItem={handleOpenItem} />
 
 
