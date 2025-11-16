@@ -23,7 +23,7 @@ export default function Sidebar({ topics, activeTopicId, activeItemId, onOpenIte
     }
 
     return (
-        <div className="flex flex-col flex-shrink-0 justify-between min-h-screen w-80 overflow-hidden p-6 pb-5 border-r border-border"> {/* Potentially change to primary-muted */}
+        <div className="flex flex-col flex-shrink-0 justify-between min-h-screen w-110 overflow-hidden p-6 pb-5 border-r border-border"> {/* Potentially change to primary-muted */}
             <div className="overflow-y-auto h-full flex-1">
                 {topics.map(topic => (
                     <div key={topic.id}>
