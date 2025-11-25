@@ -19,11 +19,17 @@ function reportNuggetCompletion(jsonData) {
         let streak = getValue('streak');
         let correct = getValue('correct');
         let questions = getValue('questions');
-        const lastPlayedRaw = getValue('lastPlayed'); // Get the timestamp
+        let lastPlayedRaw = Number(getValue('lastPlayed')) || 0;
         
         // Compute today's normalized timestamp (midnight start)
         const now = Date.now();
         const todayNormalized = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
+        
+        // LOG: Date values
+        console.log('=== STREAK DEBUG ===');
+        console.log('lastPlayedRaw:', lastPlayedRaw, '(', new Date(lastPlayedRaw), ')');
+        console.log('todayNormalized:', todayNormalized, '(', new Date(todayNormalized), ')');
+        console.log('Current streak BEFORE update:', streak);
         
         // Handle points based on accuracy
         if (percentage > 95) {
@@ -37,23 +43,36 @@ function reportNuggetCompletion(jsonData) {
         }
         
         const ONE_DAY_MS = 1000 * 60 * 60 * 24;
-        
         if (lastPlayedRaw < todayNormalized) {
+            console.log('→ BRANCH: lastPlayedRaw < todayNormalized (first play today)');
             
             const yesterdayNormalized = todayNormalized - ONE_DAY_MS;
+            console.log('  yesterdayNormalized:', yesterdayNormalized, '(', new Date(yesterdayNormalized), ')');
 
             if (lastPlayedRaw === yesterdayNormalized) {
+                console.log('  → BRANCH: lastPlayedRaw === yesterdayNormalized (played yesterday!)');
+                console.log('    Incrementing streak from', streak, 'to', streak + 1);
                 streak += 1;
             } else {
+                console.log('  → BRANCH: lastPlayedRaw !== yesterdayNormalized (did NOT play yesterday)');
+                console.log('    Resetting streak from', streak, 'to 1');
                 streak = 1;
             }
 
             // Award points for the streak
             const streakPoints = Math.min(streak, 50); 
             points += streakPoints;
+            console.log('  Awarding', streakPoints, 'streak points');
             
             setValue('lastPlayed', todayNormalized);
-        } 
+            console.log('  Updated lastPlayed to', todayNormalized);
+        } else {
+            console.log('→ BRANCH: lastPlayedRaw >= todayNormalized (already played today)');
+            console.log('  Skipping streak update');
+        }
+
+        console.log('Streak AFTER update:', streak);
+        console.log('=== END STREAK DEBUG ===');
 
         // Update correct and questions
         correct += score;
