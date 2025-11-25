@@ -220,10 +220,6 @@ function setValue(key, val) {
         const delta = numericVal - current;
 
         let valueToSave = numericVal;
-        if (Math.abs(delta) > 50) {
-            console.warn(`Attempted to set ${key} to ${numericVal}, which is an increase of ${delta}. Change exceeds limit, saving limit value.`);
-            valueToSave = current + 50;
-        }
 
         try {
             const encryptedValue = encryptValue(valueToSave);
