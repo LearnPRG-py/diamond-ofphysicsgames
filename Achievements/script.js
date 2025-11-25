@@ -184,7 +184,10 @@ function getValue(key) {
             } else {
                 // PATCH: Decrypting resulted in a value outside the expected range (e.g., negative or too large).
                 console.warn(`Decryption of ${key} resulted in an unexpected value: ${decrypted}. Treating as corrupt.`);
-                return -1; // Return signal for corruption
+                if (key == "lastPlayed") {
+                    return decrypted;
+                }
+                return -1;
             }
         } catch (error) {
             // PATCH: Decryption failed (e.g., local secret is gone/wrong).
