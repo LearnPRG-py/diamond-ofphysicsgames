@@ -167,7 +167,7 @@ function getValue(key) {
     
     if (!raw) return 0;
     
-    const EXEMPT_FROM_DECRYPTION = ['achievementsBitmap', 'badges', 'hash'];
+    const EXEMPT_FROM_DECRYPTION = ['achievementsBitmap', 'badges', 'hash', 'lastPlayed'];
     
     if (EXEMPT_FROM_DECRYPTION.includes(key)) {
         return parseInt(raw, 10) || 0;
@@ -184,9 +184,6 @@ function getValue(key) {
             } else {
                 // PATCH: Decrypting resulted in a value outside the expected range (e.g., negative or too large).
                 console.warn(`Decryption of ${key} resulted in an unexpected value: ${decrypted}. Treating as corrupt.`);
-                if (key == "lastPlayed") {
-                    return decrypted;
-                }
                 return -1;
             }
         } catch (error) {
