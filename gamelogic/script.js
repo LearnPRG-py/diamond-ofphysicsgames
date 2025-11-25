@@ -1,37 +1,43 @@
-// // Don't redeclare STORAGE_KEYS - it's already defined in achievements/script.js
-
 function reportNuggetCompletion(jsonData) {
     try {
         console.log('reportNuggetCompletion called with data:', jsonData);
         const data = JSON.parse(jsonData);
         console.log('Nugget completed:', data);
         let { score, tries } = data;
-        // Validate inputs to avoid NaN propagation
+
         score = Number(score) || 0;
-        tries = Number(tries) || 1; // avoid div-by-zero and NaN
+        tries = Number(tries) || 1;
         
-        // Calculate percentage
         const percentage = (score / tries) * 100;
-        
-        // Get current values using getValue function
+
         let points = getValue('points');
         let perfection = getValue('perfection');
         let streak = getValue('streak');
         let correct = getValue('correct');
         let questions = getValue('questions');
         let lastPlayedRaw = Number(getValue('lastPlayed')) || 0;
-        
-        // Compute today's normalized timestamp (midnight start)
+
         const now = Date.now();
-        const todayNormalized = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), new Date(now).getDate()).getTime();
-        
-        // LOG: Date values
+        const todayNormalized = new Date(
+            new Date(now).getFullYear(),
+            new Date(now).getMonth(),
+            new Date(now).getDate()
+        ).getTime();
+
+        const lastPlayedNormalized = new Date(
+            new Date(lastPlayedRaw).getFullYear(),
+            new Date(lastPlayedRaw).getMonth(),
+            new Date(lastPlayedRaw).getDate()
+        ).getTime();
+
+        // Debug Logs
         console.log('=== STREAK DEBUG ===');
         console.log('lastPlayedRaw:', lastPlayedRaw, '(', new Date(lastPlayedRaw), ')');
+        console.log('lastPlayedNormalized:', lastPlayedNormalized, '(', new Date(lastPlayedNormalized), ')');
         console.log('todayNormalized:', todayNormalized, '(', new Date(todayNormalized), ')');
         console.log('Current streak BEFORE update:', streak);
-        
-        // Handle points based on accuracy
+
+        // POINTS FOR PERFORMANCE
         if (percentage > 95) {
             points += 50;
             perfection += 3;
@@ -39,46 +45,45 @@ function reportNuggetCompletion(jsonData) {
             points += 30;
             perfection += 1;
         } else {
-            points += 20; // Just completed, no %age
+            points += 20;
         }
-        
+
         const ONE_DAY_MS = 1000 * 60 * 60 * 24;
-        if (lastPlayedRaw < todayNormalized) {
-            console.log('→ BRANCH: lastPlayedRaw < todayNormalized (first play today)');
-            
+
+        if (lastPlayedNormalized < todayNormalized) {
+            console.log('→ BRANCH: first play today');
+
             const yesterdayNormalized = todayNormalized - ONE_DAY_MS;
             console.log('  yesterdayNormalized:', yesterdayNormalized, '(', new Date(yesterdayNormalized), ')');
 
-            if (lastPlayedRaw === yesterdayNormalized) {
-                console.log('  → BRANCH: lastPlayedRaw === yesterdayNormalized (played yesterday!)');
-                console.log('    Incrementing streak from', streak, 'to', streak + 1);
+            if (lastPlayedNormalized === yesterdayNormalized) {
+                console.log('  → played yesterday → streak++');
                 streak += 1;
             } else {
-                console.log('  → BRANCH: lastPlayedRaw !== yesterdayNormalized (did NOT play yesterday)');
-                console.log('    Resetting streak from', streak, 'to 1');
+                console.log('  → did NOT play yesterday → reset streak');
                 streak = 1;
             }
 
-            // Award points for the streak
-            const streakPoints = Math.min(streak, 50); 
+            const streakPoints = Math.min(streak, 50);
             points += streakPoints;
             console.log('  Awarding', streakPoints, 'streak points');
-            
+
+            // Save LAST PLAYED as today midnight
             setValue('lastPlayed', todayNormalized);
             console.log('  Updated lastPlayed to', todayNormalized);
+
         } else {
-            console.log('→ BRANCH: lastPlayedRaw >= todayNormalized (already played today)');
-            console.log('  Skipping streak update');
+            console.log('→ BRANCH: already played today → no streak update');
         }
 
         console.log('Streak AFTER update:', streak);
         console.log('=== END STREAK DEBUG ===');
 
-        // Update correct and questions
+        // Update totals
         correct += score;
         questions += tries;
 
-        // Use setValue function to save all updated values (pass numbers, not strings)
+        // Save stats
         setValue('points', points);
         setValue('perfection', perfection);
         setValue('streak', streak);
